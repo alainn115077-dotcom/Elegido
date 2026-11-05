@@ -1,0 +1,60 @@
+@model List<SolicitudBot>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Solicitudes";
+    ViewData["Subtitulo"] = "Eventos que piden los clientes por el bot de WhatsApp";
+    string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
+}
+<div class="barra-herramientas">
+    <span class="text-secundario small">@Model.Count(s => s.Estado == EstadoSolicitud.Nueva) nueva(s)</span>
+    <a asp-action="Probar" class="btn btn-ghost"><i class="bi bi-robot"></i> Probar el bot</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="tarjeta aparecer">
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-whatsapp", "Aún no hay solicitudes", "Cuando un cliente agende por el bot de WhatsApp aparecerá aquí para que la apruebes."))
+    </div>
+}
+else
+{
+    <div class="lista-solicitudes">
+        @foreach (var s in Model)
+        {
+            var horario = s.Hora == null ? "Horario por confirmar"
+                : $"{DateTime.Today.Add(s.Hora.Value).ToString("h:mm tt", mx)} a {DateTime.Today.Add(s.Hora.Value).AddHours(s.DuracionHoras).ToString("h:mm tt", mx)}";
+            <article class="tarjeta solicitud aparecer @(s.Estado != EstadoSolicitud.Nueva ? "atendida" : "")">
+                <div class="solicitud-cabecera">
+                    <div>
+                        <strong class="solicitud-nombre">@s.Nombre</strong>
+                        <small class="text-secundario">Recibida @s.Creada.ToString("d MMM h:mm tt", mx)</small>
+                    </div>
+                    @if (s.Estado == EstadoSolicitud.Nueva) { <span class="estado estado-pendiente"><span class="punto"></span>Nueva</span> }
+                    else if (s.Estado == EstadoSolicitud.Aprobada) { <span class="estado estado-confirmada"><span class="punto"></span>Aprobada</span> }
+                    else { <span class="estado estado-cancelada"><span class="punto"></span>Rechazada</span> }
+                </div>
+                <div class="solicitud-datos">
+                    <span><i class="bi bi-calendar-event"></i> @Cap(s.Fecha.ToString("dddd d 'de' MMMM yyyy", mx))</span>
+                    <span class="@(s.Hora == null ? "texto-pendiente" : "")"><i class="bi bi-clock"></i> @horario (@s.DuracionHoras h)</span>
+                    <span class="@(s.Direccion == null ? "texto-pendiente" : "")"><i class="bi bi-geo-alt"></i> @(s.Direccion ?? "Lugar por confirmar")</span>
+                </div>
+                <div class="solicitud-acciones">
+                    <a href="https://wa.me/@Formato.SoloDigitos(s.Telefono)" target="_blank" rel="noopener" class="btn btn-ghost"><i class="bi bi-whatsapp text-wa"></i> Escribirle</a>
+                    @if (s.Estado == EstadoSolicitud.Nueva)
+                    {
+                        <form asp-action="Rechazar" asp-route-id="@s.Id" method="post" data-confirmar="¿Rechazar la solicitud de @(s.Nombre)?">
+                            <button class="btn btn-ghost-peligro"><i class="bi bi-x-lg"></i> Rechazar</button>
+                        </form>
+                        <form asp-action="Aprobar" asp-route-id="@s.Id" method="post">
+                            <button class="btn btn-oro"><i class="bi bi-check2"></i> Aprobar y agendar</button>
+                        </form>
+                    }
+                    else if (s.ContratacionId != null)
+                    {
+                        <a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@s.ContratacionId" class="btn btn-oro"><i class="bi bi-eye"></i> Ver contratación</a>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+}

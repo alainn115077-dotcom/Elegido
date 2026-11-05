@@ -1,0 +1,60 @@
+@inject Microsoft.Extensions.Options.IOptions<WhatsAppBotSettings> BotOpciones
+@{
+    ViewData["Title"] = "Probar el bot";
+    ViewData["Subtitulo"] = "Simulador: así contesta el bot de WhatsApp (no se envía nada a nadie)";
+    var conf = BotOpciones.Value;
+    var webhook = $"{Context.Request.Scheme}://{Context.Request.Host}/api/whatsapp";
+}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <section class="tarjeta aparecer bot-simulador">
+            <div class="bot-chat" id="botChat">
+                <div class="bot-msg bot">Escribe <strong>hola</strong> para empezar, como lo haría un cliente.</div>
+            </div>
+            <form id="botForm" class="bot-entrada" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <input name="mensaje" id="botTexto" class="form-control" placeholder="Escribe un mensaje…" maxlength="300" />
+                <button class="btn btn-oro" type="submit" aria-label="Enviar"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-5">
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-plug"></i> Conexión con WhatsApp</h2></div>
+            @if (conf.Configurado)
+            {
+                <p class="text-verde mb-2"><i class="bi bi-check-circle-fill"></i> Conectado a WhatsApp (número @conf.PhoneNumberId).</p>
+            }
+            else
+            {
+                <p class="text-amarillo mb-2"><i class="bi bi-exclamation-triangle-fill"></i> Aún no está conectado a un número de WhatsApp. El simulador sí funciona.</p>
+            }
+            <p class="small text-secundario mb-1">URL del webhook para Meta:</p>
+            <code class="d-block mb-3" style="word-break:break-all">@webhook</code>
+            <p class="small text-secundario mb-0">Firma de seguridad (App Secret): @(string.IsNullOrEmpty(conf.AppSecret) ? "no configurada" : "configurada ✅")</p>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const chat = document.getElementById('botChat'), form = document.getElementById('botForm'), texto = document.getElementById('botTexto');
+            const esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+            const fmt = s => esc(s).replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            const agregar = (html, quien) => { const d = document.createElement('div'); d.className = 'bot-msg ' + quien; d.innerHTML = html; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; };
+            form.addEventListener('submit', async e => {
+                e.preventDefault();
+                const msg = texto.value.trim(); if (!msg) return;
+                const datos = new FormData(form);
+                agregar(esc(msg), 'yo'); texto.value = '';
+                try {
+                    const r = await fetch('@Url.Action("Probar")', { method: 'POST', body: datos });
+                    const d = await r.json();
+                    agregar(fmt(d.respuesta), 'bot');
+                } catch { agregar('No se pudo contactar al bot.', 'bot'); }
+                texto.focus();
+            });
+        })();
+    </script>
+}

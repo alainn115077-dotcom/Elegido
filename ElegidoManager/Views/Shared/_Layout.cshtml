@@ -1,3 +1,4 @@
+@inject ElegidoManager.Data.AppDbContext DbLayout
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string Activo(params string[] controladores) => controladores.Contains(ctrl) ? "active" : "";
@@ -6,6 +7,7 @@
     var esAdmin = User.IsInRole(Catalogos.RolAdministrador);
     var soloVer = User.IsInRole(Catalogos.RolIntegrante);
     var esColaborador = User.IsInRole(Catalogos.RolColaborador);
+    var solicitudesNuevas = soloVer ? 0 : DbLayout.SolicitudesBot.Count(s => s.Estado == EstadoSolicitud.Nueva);
     var hoyTexto = DateTime.Today.ToString("dddd d 'de' MMMM", new CultureInfo("es-MX"));
     hoyTexto = char.ToUpper(hoyTexto[0]) + hoyTexto.Substring(1);
 }
@@ -58,6 +60,7 @@
 
                 <span class="nav-grupo">Negocio</span>
                 <a class="nav-item-em @Activo("Contrataciones")" asp-controller="Contrataciones" asp-action="Index"><i class="bi bi-journal-check"></i><span>Contrataciones</span></a>
+                <a class="nav-item-em @Activo("Solicitudes")" asp-controller="Solicitudes" asp-action="Index"><i class="bi bi-whatsapp"></i><span>Solicitudes</span>@if (solicitudesNuevas > 0) { <span class="nav-insignia">@solicitudesNuevas</span> }</a>
                 <a class="nav-item-em @Activo("Clientes")" asp-controller="Clientes" asp-action="Index"><i class="bi bi-people"></i><span>Clientes</span></a>
                 <a class="nav-item-em @Activo("Documentos")" asp-controller="Documentos" asp-action="Index"><i class="bi bi-file-earmark-pdf"></i><span>Documentos</span></a>
                 <a class="nav-item-em @Activo("Integrantes")" asp-controller="Integrantes" asp-action="Index"><i class="bi bi-person-badge"></i><span>Integrantes</span></a>

@@ -48,6 +48,8 @@ namespace ElegidoManager.Data
         public DbSet<Cancion> Canciones => Set<Cancion>();
         public DbSet<Documento> Documentos => Set<Documento>();
         public DbSet<Bitacora> Bitacoras => Set<Bitacora>();
+        public DbSet<ConversacionBot> ConversacionesBot => Set<ConversacionBot>();
+        public DbSet<SolicitudBot> SolicitudesBot => Set<SolicitudBot>();
 
         /// <summary>Llaves que firman las cookies de sesión: guardadas en la base para que la sesión no se pierda en la nube.</summary>
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
@@ -132,7 +134,7 @@ namespace ElegidoManager.Data
             foreach (var e in ChangeTracker.Entries())
             {
                 if (e.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted)) continue;
-                if (e.Entity is Bitacora or DataProtectionKey) continue;
+                if (e.Entity is Bitacora or DataProtectionKey or ConversacionBot) continue;
                 if (e.State == EntityState.Modified && e.Entity is Usuario &&
                     e.Properties.Where(p => p.IsModified).All(p => CamposDeSesion.Contains(p.Metadata.Name))) continue;
 
@@ -179,6 +181,8 @@ namespace ElegidoManager.Data
             Integrante => "integrante",
             MovimientoIntegrante => "deuda",
             Documento => "documento",
+            SolicitudBot => "solicitud de WhatsApp",
+            ConversacionBot => "conversación de WhatsApp",
             _ => o.GetType().Name.ToLowerInvariant()
         };
 
@@ -319,6 +323,19 @@ namespace ElegidoManager.Data
             {
                 e.ToTable("Bitacora");
                 e.HasIndex(x => x.Fecha);
+            });
+
+            mb.Entity<ConversacionBot>(e =>
+            {
+                e.ToTable("ConversacionesBot");
+                e.HasIndex(x => x.Telefono).IsUnique();
+            });
+
+            mb.Entity<SolicitudBot>(e =>
+            {
+                e.ToTable("SolicitudesBot");
+                e.Property(x => x.Estado).HasConversion<string>().HasMaxLength(20);
+                e.HasIndex(x => x.Estado);
             });
 
             // En MongoDB los Ids salen de un contador atómico (como IDENTITY en SQL Server)

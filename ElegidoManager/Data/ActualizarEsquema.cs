@@ -72,6 +72,30 @@ BEGIN
     CREATE INDEX IX_Bitacora_Fecha ON dbo.Bitacora(Fecha);
 END");
 
+            // Bot de WhatsApp: conversaciones y solicitudes de evento
+            db.Database.ExecuteSqlRaw(@"
+IF OBJECT_ID(N'dbo.ConversacionesBot', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ConversacionesBot (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ConversacionesBot PRIMARY KEY,
+        Telefono NVARCHAR(20) NOT NULL, NombrePerfil NVARCHAR(80) NULL, Paso NVARCHAR(30) NOT NULL,
+        Fecha DATETIME2 NULL, Hora TIME NULL, DuracionHoras INT NULL, Direccion NVARCHAR(250) NULL, Nombre NVARCHAR(120) NULL,
+        PausadoHasta DATETIME2 NULL, UltimoMensaje DATETIME2 NOT NULL
+    );
+    CREATE UNIQUE INDEX IX_ConversacionesBot_Telefono ON dbo.ConversacionesBot(Telefono);
+END");
+            db.Database.ExecuteSqlRaw(@"
+IF OBJECT_ID(N'dbo.SolicitudesBot', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SolicitudesBot (
+        Id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_SolicitudesBot PRIMARY KEY,
+        Telefono NVARCHAR(20) NOT NULL, Nombre NVARCHAR(120) NOT NULL, Fecha DATETIME2 NOT NULL, Hora TIME NULL,
+        DuracionHoras INT NOT NULL, Direccion NVARCHAR(250) NULL, Estado NVARCHAR(20) NOT NULL,
+        Creada DATETIME2 NOT NULL, ContratacionId INT NULL
+    );
+    CREATE INDEX IX_SolicitudesBot_Estado ON dbo.SolicitudesBot(Estado);
+END");
+
             // Usuarios: cuenta ligada a un integrante del grupo (para que vea sus deudas)
             db.Database.ExecuteSqlRaw(
                 "IF COL_LENGTH(N'dbo.Usuarios', N'IntegranteId') IS NULL ALTER TABLE dbo.Usuarios ADD IntegranteId INT NULL;");

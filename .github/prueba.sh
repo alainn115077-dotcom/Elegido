@@ -31,6 +31,20 @@ ID=$(curl -s -b "$J" "$B/Contrataciones" | grep -o '/Contrataciones/Detalle/[0-9
 [ -n "$ID" ] && ok "$ID" || { echo "No apareció la contratación creada"; F=1; }
 ok "/Consultas/Responder?clave=generado-finde"
 ok "/Consultas/Responder?clave=fechas-disponibles"
+# Bot de WhatsApp (simulador): conversación completa para agendar
+T=$(curl -s -b "$J" -c "$J" "$B/Solicitudes/Probar" | tok)
+bot() { curl -s -b "$J" -c "$J" -X POST "$B/Solicitudes/Probar" --data-urlencode "__RequestVerificationToken=$T" --data-urlencode "mensaje=$1"; echo; }
+for m in "hola" "1" "2" "3" "20 de diciembre" "9:30 pm" "2" "Calle Arte 1545" "Juan Pérez" "1"; do echo "> $m"; bot "$m" | head -c 400; echo; done | tee /tmp/bot.txt
+grep -q "Listo" /tmp/bot.txt || { echo "El bot no registró la solicitud"; F=1; }
+ok "/Solicitudes"
+SID=$(curl -s -b "$J" "$B/Solicitudes" | grep -o '/Solicitudes/Aprobar/[0-9]*' | head -1)
+if [ -n "$SID" ]; then
+  T2=$(curl -s -b "$J" "$B/Solicitudes" | tok)
+  c=$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -c "$J" -X POST "$B$SID" --data-urlencode "__RequestVerificationToken=$T2")
+  echo "$c  POST $SID"; [ "$c" = "302" ] || F=1
+else echo "No apareció la solicitud"; F=1; fi
+c=$(curl -s -o /dev/null -w '%{http_code}' "$B/api/whatsapp?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1"); echo "$c  webhook sin token (debe ser 403)"; [ "$c" = "403" ] || F=1
+
 # Archivos propios (Bootstrap, íconos, jQuery) deben servirse desde la app
 for p in /lib/bootstrap/bootstrap.min.css /lib/bootstrap/bootstrap.bundle.min.js /lib/bootstrap-icons/bootstrap-icons.min.css \
          /lib/bootstrap-icons/fonts/bootstrap-icons.woff2 /lib/jquery/jquery.min.js /sw.js /manifest.webmanifest; do ok "$p"; done

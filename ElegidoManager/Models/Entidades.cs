@@ -377,4 +377,57 @@ namespace ElegidoManager.Models
         [StringLength(60)]
         public string? Ip { get; set; }
     }
+
+    public enum EstadoSolicitud { Nueva, Aprobada, Rechazada }
+
+    /// <summary>Conversación del bot de WhatsApp con un cliente (en qué paso va y qué datos lleva).</summary>
+    public class ConversacionBot
+    {
+        public int Id { get; set; }
+
+        [Required, StringLength(20)]
+        public string Telefono { get; set; } = string.Empty;
+
+        [StringLength(80)]
+        public string? NombrePerfil { get; set; }
+
+        [StringLength(30)]
+        public string Paso { get; set; } = "menu";
+
+        // Datos que va capturando para agendar
+        public DateTime? Fecha { get; set; }
+        public TimeSpan? Hora { get; set; }
+        public int? DuracionHoras { get; set; }
+        [StringLength(250)]
+        public string? Direccion { get; set; }
+        [StringLength(120)]
+        public string? Nombre { get; set; }
+
+        /// <summary>Si el cliente pidió hablar con Alain, el bot no contesta hasta esta hora.</summary>
+        public DateTime? PausadoHasta { get; set; }
+        public DateTime UltimoMensaje { get; set; } = DateTime.Now;
+    }
+
+    /// <summary>Solicitud de evento que un cliente hizo por el bot; el administrador la aprueba o rechaza.</summary>
+    public class SolicitudBot
+    {
+        public int Id { get; set; }
+
+        [Required, StringLength(20)]
+        public string Telefono { get; set; } = string.Empty;
+
+        [Required, StringLength(120)]
+        public string Nombre { get; set; } = string.Empty;
+
+        public DateTime Fecha { get; set; }
+        public TimeSpan? Hora { get; set; }
+        public int DuracionHoras { get; set; } = 1;
+
+        [StringLength(250)]
+        public string? Direccion { get; set; }
+
+        public EstadoSolicitud Estado { get; set; } = EstadoSolicitud.Nueva;
+        public DateTime Creada { get; set; } = DateTime.Now;
+        public int? ContratacionId { get; set; }
+    }
 }

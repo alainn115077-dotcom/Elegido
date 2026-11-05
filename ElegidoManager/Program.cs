@@ -132,6 +132,9 @@ builder.Services.Configure<GrupoSettings>(builder.Configuration.GetSection("Grup
 builder.Services.AddScoped<AgendaService>();
 builder.Services.AddScoped<ConsultasService>();
 builder.Services.AddScoped<DocumentosService>();
+builder.Services.AddHttpClient();
+builder.Services.Configure<WhatsAppBotSettings>(builder.Configuration.GetSection("WhatsAppBot"));
+builder.Services.AddScoped<BotWhatsApp>();
 
 var cultura = new CultureInfo("es-MX");
 CultureInfo.DefaultThreadCurrentCulture = cultura;

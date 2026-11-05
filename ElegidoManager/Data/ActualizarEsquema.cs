@@ -9,6 +9,18 @@ namespace ElegidoManager.Data
     /// </summary>
     public static class ActualizarEsquema
     {
+        /// <summary>Arranque en modo MongoDB: contadores, índices e integrantes iniciales.</summary>
+        public static void AplicarMongo(AppDbContext db)
+        {
+            db.Mongo!.Inicializar(db.Model);
+            if (!db.Integrantes.Any())
+            {
+                foreach (var nombre in new[] { "Omar", "Andy", "Ángel", "Fernando" })
+                    db.Integrantes.Add(new Integrante { NombreCompleto = nombre, Instrumento = "", Activo = true });
+                db.SaveChanges();
+            }
+        }
+
         public static void Aplicar(AppDbContext db)
         {
             db.Database.ExecuteSqlRaw(@"
@@ -28,6 +40,36 @@ BEGIN
         CONSTRAINT FK_MovimientosIntegrantes_Integrantes_IntegranteId FOREIGN KEY (IntegranteId) REFERENCES dbo.Integrantes(Id) ON DELETE CASCADE
     );
     CREATE INDEX IX_MovimientosIntegrantes_IntegranteId ON dbo.MovimientosIntegrantes(IntegranteId);
+END");
+
+            // Llaves de las cookies de sesión (necesarias en la nube, donde no hay disco permanente)
+            db.Database.ExecuteSqlRaw(@"
+IF OBJECT_ID(N'dbo.DataProtectionKeys', N'U') IS NULL
+    CREATE TABLE dbo.DataProtectionKeys (
+        Id           INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_DataProtectionKeys PRIMARY KEY,
+        FriendlyName NVARCHAR(MAX) NULL,
+        Xml          NVARCHAR(MAX) NULL
+    );");
+
+            // Seguridad: bloqueo por intentos, sello de sesión y bitácora
+            db.Database.ExecuteSqlRaw(
+                "IF COL_LENGTH(N'dbo.Usuarios', N'IntentosFallidos') IS NULL ALTER TABLE dbo.Usuarios ADD IntentosFallidos INT NOT NULL CONSTRAINT DF_Usuarios_IntentosFallidos DEFAULT 0;");
+            db.Database.ExecuteSqlRaw(
+                "IF COL_LENGTH(N'dbo.Usuarios', N'BloqueadoHasta') IS NULL ALTER TABLE dbo.Usuarios ADD BloqueadoHasta DATETIME2 NULL;");
+            db.Database.ExecuteSqlRaw(
+                "IF COL_LENGTH(N'dbo.Usuarios', N'SelloSeguridad') IS NULL ALTER TABLE dbo.Usuarios ADD SelloSeguridad NVARCHAR(64) NULL;");
+            db.Database.ExecuteSqlRaw(@"
+IF OBJECT_ID(N'dbo.Bitacora', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Bitacora (
+        Id      INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Bitacora PRIMARY KEY,
+        Fecha   DATETIME2      NOT NULL,
+        Usuario NVARCHAR(50)   NOT NULL,
+        Accion  NVARCHAR(60)   NOT NULL,
+        Detalle NVARCHAR(500)  NULL,
+        Ip      NVARCHAR(60)   NULL
+    );
+    CREATE INDEX IX_Bitacora_Fecha ON dbo.Bitacora(Fecha);
 END");
 
             // Usuarios: cuenta ligada a un integrante del grupo (para que vea sus deudas)

@@ -78,6 +78,7 @@ else
                 {
                     <a href="@Mapas.Url(proxima.Ubicacion)" target="_blank" rel="noopener" class="btn btn-ghost"><i class="bi bi-map"></i> Mapa</a>
                 }
+                <a asp-controller="Agenda" asp-action="Ics" asp-route-id="@proxima.ContratacionId" class="btn btn-ghost" title="Agregar al calendario del celular"><i class="bi bi-calendar-plus"></i> Calendario</a>
             </div>
         </div>
     </section>

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ElegidoManager.Controllers
@@ -26,22 +27,50 @@ namespace ElegidoManager.Controllers
             return View(new LoginViewModel { ReturnUrl = returnUrl });
         }
 
-        [AllowAnonymous, HttpPost]
+        private const int MaxIntentos = 5;
+        private static readonly TimeSpan TiempoBloqueo = TimeSpan.FromMinutes(15);
+
+        [AllowAnonymous, HttpPost, EnableRateLimiting("login")]
         public async Task<IActionResult> Login(LoginViewModel vm)
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var nombre = vm.Usuario.Trim();
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.NombreUsuario == nombre);
+            var nombre = vm.Usuario.Trim().ToLower();
+            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.NombreUsuario.ToLower() == nombre);
+
+            if (usuario != null && usuario.BloqueadoHasta > DateTime.Now)
+            {
+                var minutos = (int)Math.Ceiling((usuario.BloqueadoHasta.Value - DateTime.Now).TotalMinutes);
+                ModelState.AddModelError(string.Empty, $"Cuenta bloqueada por seguridad. Intenta de nuevo en {minutos} minuto(s).");
+                return View(vm);
+            }
 
             if (usuario == null || !usuario.Activo ||
                 _hasher.VerifyHashedPassword(usuario, usuario.PasswordHash, vm.Contrasena) == PasswordVerificationResult.Failed)
             {
-                ModelState.AddModelError(string.Empty, "Usuario o contraseña incorrectos.");
+                if (usuario != null && usuario.Activo)
+                {
+                    usuario.IntentosFallidos++;
+                    if (usuario.IntentosFallidos >= MaxIntentos)
+                    {
+                        usuario.IntentosFallidos = 0;
+                        usuario.BloqueadoHasta = DateTime.Now.Add(TiempoBloqueo);
+                        _db.Bitacoras.Add(_db.NuevaBitacora("Cuenta bloqueada", $"{MaxIntentos} intentos fallidos seguidos", usuario.NombreUsuario));
+                    }
+                }
+                _db.Bitacoras.Add(_db.NuevaBitacora("Intento fallido", "Usuario o contraseña incorrectos", vm.Usuario.Trim()));
+                await _db.SaveChangesAsync();
+                ModelState.AddModelError(string.Empty, usuario?.BloqueadoHasta > DateTime.Now
+                    ? $"Demasiados intentos. Tu cuenta quedó bloqueada {TiempoBloqueo.TotalMinutes:0} minutos."
+                    : "Usuario o contraseña incorrectos.");
                 return View(vm);
             }
 
             usuario.UltimoAcceso = DateTime.Now;
+            usuario.IntentosFallidos = 0;
+            usuario.BloqueadoHasta = null;
+            if (string.IsNullOrEmpty(usuario.SelloSeguridad)) usuario.SelloSeguridad = Guid.NewGuid().ToString("N");
+            _db.Bitacoras.Add(_db.NuevaBitacora("Inició sesión", null, usuario.NombreUsuario));
             await _db.SaveChangesAsync();
             await IniciarSesionAsync(usuario, vm.Recordarme);
 
@@ -69,7 +98,8 @@ namespace ElegidoManager.Controllers
                 NombreCompleto = vm.NombreCompleto.Trim(),
                 Rol = Catalogos.RolAdministrador,
                 Activo = true,
-                UltimoAcceso = DateTime.Now
+                UltimoAcceso = DateTime.Now,
+                SelloSeguridad = Guid.NewGuid().ToString("N")
             };
             usuario.PasswordHash = _hasher.HashPassword(usuario, vm.Contrasena);
             _db.Usuarios.Add(usuario);
@@ -83,6 +113,8 @@ namespace ElegidoManager.Controllers
         [HttpPost]
         public async Task<IActionResult> Salir()
         {
+            _db.Bitacoras.Add(_db.NuevaBitacora("Cerró sesión", null));
+            await _db.SaveChangesAsync();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login));
         }
@@ -105,7 +137,10 @@ namespace ElegidoManager.Controllers
             }
 
             usuario.PasswordHash = _hasher.HashPassword(usuario, vm.Nueva);
+            // Nuevo sello: se cierran las sesiones abiertas en otros dispositivos
+            usuario.SelloSeguridad = Guid.NewGuid().ToString("N");
             await _db.SaveChangesAsync();
+            await IniciarSesionAsync(usuario, false);
             TempData["Exito"] = "Contraseña actualizada correctamente.";
             return RedirectToAction("Index", "Home");
         }
@@ -120,7 +155,8 @@ namespace ElegidoManager.Controllers
                 new(ClaimTypes.NameIdentifier, u.Id.ToString()),
                 new(ClaimTypes.Name, u.NombreUsuario),
                 new("NombreCompleto", u.NombreCompleto),
-                new(ClaimTypes.Role, u.Rol)
+                new(ClaimTypes.Role, u.Rol),
+                new("sello", u.SelloSeguridad ?? "")
             };
             var identidad = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,

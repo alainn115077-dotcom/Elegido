@@ -26,6 +26,15 @@ namespace ElegidoManager.Models
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
         public DateTime? UltimoAcceso { get; set; }
 
+        // ---- Seguridad ----
+        /// <summary>Intentos fallidos seguidos de contraseña (se reinicia al entrar bien).</summary>
+        public int IntentosFallidos { get; set; }
+        /// <summary>Si tiene valor y no ha pasado, la cuenta está bloqueada temporalmente.</summary>
+        public DateTime? BloqueadoHasta { get; set; }
+        /// <summary>Cambia cuando se cambia la contraseña, el rol o se desactiva: cierra las sesiones abiertas.</summary>
+        [StringLength(64)]
+        public string? SelloSeguridad { get; set; }
+
         /// <summary>Para cuentas con rol Integrante: a qué integrante del grupo corresponde (para ver sus deudas).</summary>
         public int? IntegranteId { get; set; }
         public Integrante? Integrante { get; set; }
@@ -348,5 +357,24 @@ namespace ElegidoManager.Models
         public string NombreArchivo { get; set; } = string.Empty;
 
         public byte[] Contenido { get; set; } = Array.Empty<byte>();
+    }
+
+    /// <summary>Bitácora de seguridad: quién entró, cuándo y qué cambió.</summary>
+    public class Bitacora
+    {
+        public int Id { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.Now;
+
+        [StringLength(50)]
+        public string Usuario { get; set; } = string.Empty;
+
+        [StringLength(60)]
+        public string Accion { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? Detalle { get; set; }
+
+        [StringLength(60)]
+        public string? Ip { get; set; }
     }
 }

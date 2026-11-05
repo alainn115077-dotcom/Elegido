@@ -39,7 +39,7 @@ namespace ElegidoManager.Controllers
         {
             if (!Catalogos.Roles.Contains(vm.Rol)) ModelState.AddModelError(nameof(vm.Rol), "Rol no válido.");
             var nombre = vm.Usuario?.Trim() ?? "";
-            if (await _db.Usuarios.AnyAsync(u => u.NombreUsuario == nombre))
+            if (await _db.Usuarios.AnyAsync(u => u.NombreUsuario.ToLower() == nombre.ToLower()))
                 ModelState.AddModelError(nameof(vm.Usuario), "Ese nombre de usuario ya existe.");
             if (Catalogos.LigaIntegrante(vm.Rol) && vm.IntegranteId.HasValue && !await _db.Integrantes.AnyAsync(i => i.Id == vm.IntegranteId))
                 ModelState.AddModelError(nameof(vm.IntegranteId), "Integrante no válido.");
@@ -52,6 +52,7 @@ namespace ElegidoManager.Controllers
             var u = new Usuario
             {
                 NombreUsuario = nombre, NombreCompleto = vm.NombreCompleto.Trim(), Rol = vm.Rol, Activo = true,
+                SelloSeguridad = Guid.NewGuid().ToString("N"),
                 IntegranteId = Catalogos.LigaIntegrante(vm.Rol) ? vm.IntegranteId : null
             };
             u.PasswordHash = _hasher.HashPassword(u, vm.Contrasena);
@@ -91,6 +92,7 @@ namespace ElegidoManager.Controllers
                 return RedirectToAction(nameof(Index));
             }
             u.Activo = !u.Activo;
+            u.SelloSeguridad = Guid.NewGuid().ToString("N"); // cierra sus sesiones abiertas
             await _db.SaveChangesAsync();
             TempData["Exito"] = u.Activo ? "Usuario activado." : "Usuario desactivado; ya no podrá iniciar sesión.";
             return RedirectToAction(nameof(Index));
@@ -101,12 +103,15 @@ namespace ElegidoManager.Controllers
         {
             var u = await _db.Usuarios.FindAsync(id);
             if (u == null) return NotFound();
-            if (string.IsNullOrWhiteSpace(nueva) || nueva.Length < 8)
+            if (!ContrasenaSeguraAttribute.EsSegura(nueva))
             {
-                TempData["Error"] = "La contraseña debe tener al menos 8 caracteres.";
+                TempData["Error"] = "La contraseña debe tener mínimo 8 caracteres, con letras y números.";
                 return RedirectToAction(nameof(Index));
             }
             u.PasswordHash = _hasher.HashPassword(u, nueva);
+            u.SelloSeguridad = Guid.NewGuid().ToString("N");
+            u.IntentosFallidos = 0;
+            u.BloqueadoHasta = null;
             await _db.SaveChangesAsync();
             TempData["Exito"] = $"Contraseña de \"{u.NombreUsuario}\" restablecida.";
             return RedirectToAction(nameof(Index));

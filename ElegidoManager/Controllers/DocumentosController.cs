@@ -28,8 +28,9 @@ namespace ElegidoManager.Controllers
             var consulta = _db.Documentos.Where(d => d.Tipo == TipoDocumento.Contrato);
             if (!string.IsNullOrWhiteSpace(q))
             {
-                var t = q.Trim();
-                consulta = consulta.Where(d => d.Folio.Contains(t) || d.Contratacion.Cliente.NombreCompleto.Contains(t));
+                var t = q.Trim().ToLower();
+                consulta = consulta.Where(d => d.Folio.ToLower().Contains(t) ||
+                                               (d.Contratacion != null && d.Contratacion.Cliente.NombreCompleto.ToLower().Contains(t)));
             }
 
             // Proyección sin la columna Contenido para no cargar los PDF en memoria
@@ -86,7 +87,7 @@ namespace ElegidoManager.Controllers
                 .Select(d => new { d.Contenido, d.NombreArchivo }).FirstOrDefaultAsync();
             if (doc == null) return NotFound();
             Response.Headers["Content-Disposition"] = $"inline; filename=\"{doc.NombreArchivo}\"";
-            return File(doc.Contenido, "application/pdf");
+            return File(_db.ContenidoDocumento(id, doc.Contenido), "application/pdf");
         }
 
         public async Task<IActionResult> Descargar(int id)
@@ -94,7 +95,7 @@ namespace ElegidoManager.Controllers
             var doc = await _db.Documentos.Where(d => d.Id == id)
                 .Select(d => new { d.Contenido, d.NombreArchivo }).FirstOrDefaultAsync();
             if (doc == null) return NotFound();
-            return File(doc.Contenido, "application/pdf", doc.NombreArchivo);
+            return File(_db.ContenidoDocumento(id, doc.Contenido), "application/pdf", doc.NombreArchivo);
         }
     }
 }

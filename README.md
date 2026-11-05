@@ -108,5 +108,32 @@ Database/ElegidoManager.sql          Script equivalente para SQL Server
 - **QuestPDF** se usa con la licencia *Community* (gratuita para personas y empresas pequeñas).
 - Bootstrap, iconos, fuentes y FullCalendar se cargan desde CDN; el equipo necesita internet para verlos con estilo.
 - La base se crea con `EnsureCreated()`. Si después quieres usar migraciones de EF Core, borra la base de pruebas, genera la migración inicial con `Add-Migration Inicial` y cambia `EnsureCreated()` por `Migrate()` en `Program.cs`.
-"# Elegido" 
-"# Elegido" 
+
+
+## Versión 2: nube, MongoDB, escritorio y seguridad
+
+### Base de datos
+- **MongoDB Atlas**: si existe `ConnectionStrings:MongoDB` (o la variable `MONGODB_URI`), la app usa MongoDB.
+  Cada colección se llama como la entidad (Usuario, Cliente, Contratacion…); los PDF van en `Archivos`.
+- **SQL Server**: si no hay cadena de MongoDB, usa `ConnectionStrings:ElegidoManager` (LocalDB / Azure SQL) como antes.
+- En la PC, la cadena va en `ElegidoManager/appsettings.Local.json` (no se sube a GitHub). Ver `appsettings.Local.ejemplo.json`.
+- En Vercel: variable de entorno `ConnectionStrings__MongoDB` (o `MONGODB_URI` de la integración de MongoDB Atlas).
+
+### App de escritorio (ElegidoManager.Escritorio)
+- Programa de Windows (WebView2) que abre la app publicada en la nube: siempre actualizado, mismos datos.
+- Crear el .exe: doble clic en `CrearEjecutable.bat` → `AppEscritorio/ElegidoManager.exe`.
+- La primera vez pide la dirección (ej. https://tu-app.vercel.app). Para cambiarla: abrir con **Shift** presionado.
+
+### Seguridad
+- Bloqueo de la cuenta 15 min tras 5 contraseñas incorrectas; máximo 10 intentos de login por minuto por IP.
+- Contraseñas: mínimo 8 caracteres con letras y números.
+- Al cambiar contraseña o desactivar un usuario se cierran sus sesiones abiertas.
+- Cookies HttpOnly/SameSite, encabezados de seguridad (CSP, anti-clickjacking, nosniff), HTTPS en la nube.
+- Bitácora (solo administrador): inicios de sesión, intentos fallidos, bloqueos y cambios.
+
+### Extras
+- **Calendario del celular**: botón "Calendario" en Inicio / "A mi calendario" en cada contratación, y en Agenda
+  "Pasar próximas presentaciones a mi calendario" (archivo .ics con aviso 2 h antes). Lo pueden usar los integrantes.
+- **Excel**: Contrataciones → botón Excel (CSV con fecha, cliente, lugar, precio, pagado y saldo).
+- **Respaldo**: Ajustes → Descargar respaldo (JSON de toda la información, sin contraseñas ni PDF). Queda en la bitácora.
+- **App instalable**: service worker con carga rápida de estilos/imágenes y pantalla "Sin conexión".

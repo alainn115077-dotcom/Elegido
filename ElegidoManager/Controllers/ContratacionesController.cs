@@ -47,11 +47,11 @@ namespace ElegidoManager.Controllers
 
             if (!string.IsNullOrWhiteSpace(q))
             {
-                var t = q.Trim();
-                consulta = consulta.Where(e => e.Contratacion.Cliente.NombreCompleto.Contains(t)
-                                               || e.Contratacion.Cliente.Telefono.Contains(t)
-                                               || e.Direccion.Contains(t)
-                                               || e.Ciudad.Contains(t));
+                var t = q.Trim().ToLower();
+                consulta = consulta.Where(e => e.Contratacion.Cliente.NombreCompleto.ToLower().Contains(t)
+                                               || (e.Contratacion.Cliente.Telefono ?? "").Contains(t)
+                                               || (e.Direccion ?? "").ToLower().Contains(t)
+                                               || (e.Ciudad ?? "").ToLower().Contains(t));
             }
 
             if (desde.HasValue) consulta = consulta.Where(e => e.Inicio >= desde.Value.Date);
@@ -462,6 +462,46 @@ namespace ElegidoManager.Controllers
                 }
             }
             return (inicio, fin);
+        }
+
+        /// <summary>Descarga todas las contrataciones en un archivo que abre Excel (CSV).</summary>
+        [HttpGet]
+        public async Task<IActionResult> Exportar()
+        {
+            var filas = await _db.Eventos
+                .OrderBy(e => e.Inicio)
+                .Select(e => new
+                {
+                    e.Inicio,
+                    e.Fin,
+                    e.HorarioPendiente,
+                    Cliente = e.Contratacion.Cliente.NombreCompleto,
+                    Telefono = e.Contratacion.Cliente.Telefono,
+                    e.Lugar,
+                    e.Direccion,
+                    e.Ciudad,
+                    e.Contratacion.Estado,
+                    Precio = e.Contratacion.PrecioAcordado,
+                    Pagado = e.Contratacion.Pagos.Sum(p => p.Monto)
+                }).ToListAsync();
+
+            static string C(string? v) => "\"" + (v ?? "").Replace("\"", "\"\"") + "\"";
+            var inv = CultureInfo.InvariantCulture;
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Fecha,Hora inicio,Hora fin,Cliente,Teléfono,Lugar,Estado,Precio,Pagado,Saldo");
+            foreach (var f in filas)
+            {
+                var lugar = string.Join(", ", new[] { f.Lugar, f.Direccion, f.Ciudad }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                sb.AppendLine(string.Join(",",
+                    f.Inicio.ToString("yyyy-MM-dd", inv),
+                    f.HorarioPendiente ? "Pendiente" : f.Inicio.ToString("h:mm tt", Mx),
+                    f.HorarioPendiente ? "" : f.Fin.ToString("h:mm tt", Mx),
+                    C(f.Cliente), C(f.Telefono), C(lugar.Length == 0 ? "Pendiente" : lugar),
+                    f.Estado.Nombre(),
+                    f.Precio.ToString("0.00", inv), f.Pagado.ToString("0.00", inv), (f.Precio - f.Pagado).ToString("0.00", inv)));
+            }
+            var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"contrataciones-{DateTime.Today:yyyy-MM-dd}.csv");
         }
 
         /// <summary>Quita pagos de la contratación; los documentos que los referían se conservan sin el vínculo.</summary>

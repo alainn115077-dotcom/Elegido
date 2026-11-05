@@ -50,7 +50,7 @@
                     <tr class="collapse" id="pwd-@u.Id">
                         <td colspan="6">
                             <form asp-action="RestablecerContrasena" asp-route-id="@u.Id" method="post" class="d-flex gap-2 flex-wrap">
-                                <input type="password" name="nueva" minlength="8" required class="form-control w-auto" placeholder="Nueva contraseña (mín. 8)" autocomplete="new-password" />
+                                <input type="password" name="nueva" minlength="8" required class="form-control w-auto" placeholder="Nueva (mín. 8, letras y números)" autocomplete="new-password" />
                                 <button class="btn btn-oro btn-sm">Restablecer</button>
                             </form>
                         </td>

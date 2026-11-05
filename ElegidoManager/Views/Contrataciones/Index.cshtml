@@ -12,7 +12,10 @@
         <a class="seg-btn @Tab("anteriores")" asp-route-vista="anteriores" asp-route-estado="@Model.Estado" asp-route-q="@Model.Q">Anteriores</a>
         <a class="seg-btn @Tab("todas")" asp-route-vista="todas" asp-route-estado="@Model.Estado" asp-route-q="@Model.Q">Todas</a>
     </div>
-    <a asp-action="Crear" class="btn btn-oro solo-escritorio"><i class="bi bi-plus-lg"></i> Nueva</a>
+    <div class="d-flex gap-2">
+        <a asp-action="Exportar" class="btn btn-ghost" title="Descargar en Excel"><i class="bi bi-file-earmark-spreadsheet"></i><span class="d-none d-sm-inline"> Excel</span></a>
+        <a asp-action="Crear" class="btn btn-oro solo-escritorio"><i class="bi bi-plus-lg"></i> Nueva</a>
+    </div>
 </div>
 
 <form method="get" class="filtros tarjeta aparecer">

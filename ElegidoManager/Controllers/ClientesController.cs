@@ -17,8 +17,8 @@ namespace ElegidoManager.Controllers
             var consulta = _db.Clientes.AsQueryable();
             if (!string.IsNullOrWhiteSpace(q))
             {
-                var t = q.Trim();
-                consulta = consulta.Where(c => c.NombreCompleto.Contains(t) || c.Telefono.Contains(t) || (c.Ciudad != null && c.Ciudad.Contains(t)));
+                var t = q.Trim().ToLower();
+                consulta = consulta.Where(c => c.NombreCompleto.ToLower().Contains(t) || (c.Telefono ?? "").Contains(t) || (c.Ciudad ?? "").ToLower().Contains(t));
             }
 
             var lista = await consulta

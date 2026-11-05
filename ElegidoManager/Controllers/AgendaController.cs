@@ -83,6 +83,29 @@ namespace ElegidoManager.Controllers
             return Json(resultado);
         }
 
+        /// <summary>Archivo .ics de una presentación para agregarla al calendario del celular.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Ics(int id, [FromServices] Microsoft.Extensions.Options.IOptions<GrupoSettings> grupo)
+        {
+            var e = await _db.Eventos.Include(x => x.Contratacion).ThenInclude(c => c.Cliente)
+                .FirstOrDefaultAsync(x => x.ContratacionId == id);
+            if (e == null) return NotFound();
+            var texto = Calendario.Generar(new[] { e }, grupo.Value.Nombre, $"{Request.Scheme}://{Request.Host}/Agenda");
+            return File(System.Text.Encoding.UTF8.GetBytes(texto), "text/calendar", $"presentacion-{e.Inicio:yyyy-MM-dd}.ics");
+        }
+
+        /// <summary>Todas las presentaciones próximas en un solo archivo .ics.</summary>
+        [HttpGet]
+        public async Task<IActionResult> IcsProximos([FromServices] Microsoft.Extensions.Options.IOptions<GrupoSettings> grupo)
+        {
+            var hoy = DateTime.Today;
+            var eventos = await _db.Eventos.Include(x => x.Contratacion).ThenInclude(c => c.Cliente)
+                .Where(x => x.Fin >= hoy && x.Contratacion.Estado != EstadoContratacion.Cancelada)
+                .OrderBy(x => x.Inicio).ToListAsync();
+            var texto = Calendario.Generar(eventos, grupo.Value.Nombre, $"{Request.Scheme}://{Request.Host}/Agenda");
+            return File(System.Text.Encoding.UTF8.GetBytes(texto), "text/calendar", "presentaciones-elegido.ics");
+        }
+
         /// <summary>Detalle de un día para la ventana de la agenda: eventos con datos de contacto y enlaces.</summary>
         [HttpGet]
         public async Task<IActionResult> Dia(DateTime fecha)

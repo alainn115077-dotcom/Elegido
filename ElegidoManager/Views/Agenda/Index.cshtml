@@ -10,6 +10,7 @@
     </div>
     <div class="col-xl-3 d-flex flex-column gap-4">
         <input type="checkbox" id="verCanceladas" class="d-none" checked />
+        <a asp-action="IcsProximos" class="btn btn-ghost"><i class="bi bi-calendar-plus"></i> Pasar próximas presentaciones a mi calendario</a>
         @if (!User.IsInRole(Catalogos.RolIntegrante))
         {
             <a asp-action="Anteriores" class="btn btn-ghost"><i class="bi bi-clock-history"></i> Consultar eventos anteriores</a>

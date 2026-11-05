@@ -1,0 +1,60 @@
+@model List<Bitacora>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Bitácora";
+    ViewData["Subtitulo"] = "Accesos y cambios en el sistema";
+    var tipo = ViewBag.Tipo as string ?? "todo";
+    string Tab(string v) => tipo == v ? "activo" : "";
+    string Clase(string accion) => accion switch
+    {
+        "Intento fallido" => "text-amarillo",
+        "Cuenta bloqueada" => "text-rojo",
+        "Inició sesión" or "Cerró sesión" => "text-verde",
+        _ => ""
+    };
+}
+<div class="barra-herramientas">
+    <div class="segmentado">
+        <a class="seg-btn @Tab("todo")" asp-route-q="@ViewBag.Q">Todo</a>
+        <a class="seg-btn @Tab("accesos")" asp-route-tipo="accesos" asp-route-q="@ViewBag.Q">Accesos</a>
+        <a class="seg-btn @Tab("cambios")" asp-route-tipo="cambios" asp-route-q="@ViewBag.Q">Cambios</a>
+        <a class="seg-btn @Tab("alertas")" asp-route-tipo="alertas" asp-route-q="@ViewBag.Q">Alertas</a>
+    </div>
+</div>
+
+<form method="get" class="filtros tarjeta aparecer">
+    <input type="hidden" name="tipo" value="@(tipo == "todo" ? "" : tipo)" />
+    <div class="buscador flex-fill">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="@ViewBag.Q" class="form-control" placeholder="Usuario, acción o detalle" />
+    </div>
+    <button class="btn btn-ghost"><i class="bi bi-funnel"></i> Filtrar</button>
+</form>
+
+<div class="tarjeta p-0 aparecer mt-3">
+    @if (Model.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-shield-check", "Sin registros", "Aquí aparecerán los inicios de sesión y los cambios."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th class="d-none d-md-table-cell">Detalle</th><th class="d-none d-lg-table-cell">IP</th></tr></thead>
+                <tbody>
+                    @foreach (var b in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap"><strong>@b.Fecha.ToString("d MMM", mx)</strong><br /><small class="text-secundario">@b.Fecha.ToString("h:mm tt", mx)</small></td>
+                            <td>@b.Usuario</td>
+                            <td class="@Clase(b.Accion) fw-semibold">@b.Accion</td>
+                            <td class="d-none d-md-table-cell text-secundario">@b.Detalle</td>
+                            <td class="d-none d-lg-table-cell text-secundario">@b.Ip</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+<p class="text-secundario small mt-3"><i class="bi bi-info-circle"></i> Se muestran los últimos 400 registros. Tras 5 contraseñas incorrectas seguidas, la cuenta se bloquea 15 minutos.</p>

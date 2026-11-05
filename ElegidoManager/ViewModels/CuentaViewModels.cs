@@ -2,6 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ElegidoManager.ViewModels
 {
+    /// <summary>Contraseña segura: mínimo 8 caracteres, con al menos una letra y un número.</summary>
+    public class ContrasenaSeguraAttribute : ValidationAttribute
+    {
+        public ContrasenaSeguraAttribute()
+            : base("La contraseña debe tener mínimo 8 caracteres, con letras y números.") { }
+
+        public static bool EsSegura(string? valor) =>
+            !string.IsNullOrEmpty(valor) && valor.Length >= 8 && valor.Any(char.IsLetter) && valor.Any(char.IsDigit);
+
+        public override bool IsValid(object? value) => value is null || EsSegura(value as string);
+    }
+
     public class LoginViewModel
     {
         [Required(ErrorMessage = "Escribe tu usuario.")]
@@ -29,6 +41,7 @@ namespace ElegidoManager.ViewModels
         public string Usuario { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Escribe una contraseña."), StringLength(100, MinimumLength = 8, ErrorMessage = "Mínimo 8 caracteres.")]
+        [ContrasenaSegura]
         [DataType(DataType.Password)]
         [Display(Name = "Contraseña")]
         public string Contrasena { get; set; } = string.Empty;
@@ -53,6 +66,7 @@ namespace ElegidoManager.ViewModels
         public string Actual { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Escribe la nueva contraseña."), StringLength(100, MinimumLength = 8, ErrorMessage = "Mínimo 8 caracteres.")]
+        [ContrasenaSegura]
         [DataType(DataType.Password)]
         [Display(Name = "Nueva contraseña")]
         public string Nueva { get; set; } = string.Empty;

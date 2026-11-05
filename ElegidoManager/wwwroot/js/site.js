@@ -82,3 +82,8 @@ document.addEventListener('input', e => {
     el.value = d.length > 6 ? d.slice(0, 3) + ' ' + d.slice(3, 6) + ' ' + d.slice(6)
         : d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
 });
+
+// App instalable: service worker (carga rápida + aviso sin conexión)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => { }));
+}

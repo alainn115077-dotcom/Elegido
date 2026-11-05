@@ -46,6 +46,7 @@
             </form>
         }
         <a asp-action="Editar" asp-route-id="@c.Id" class="btn btn-ghost"><i class="bi bi-pencil"></i> Editar</a>
+        <a asp-controller="Agenda" asp-action="Ics" asp-route-id="@c.Id" class="btn btn-ghost" title="Agregar al calendario del celular"><i class="bi bi-calendar-plus"></i> A mi calendario</a>
         @if (!cancelada)
         {
             <button class="btn btn-ghost-peligro" data-bs-toggle="modal" data-bs-target="#modalCancelar"><i class="bi bi-x-circle"></i> Cancelar</button>

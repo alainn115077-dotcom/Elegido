@@ -3,7 +3,7 @@
 set -u
 B="$1"; J=$(mktemp); F=0
 tok() { grep -o 'name="__RequestVerificationToken" type="hidden" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//'; }
-ok() { local c; c=$(curl -s -o /tmp/r.html -w '%{http_code}' -b "$J" -c "$J" "$B$1"); echo "$c  $1"; [ "$c" = "200" ] || { F=1; head -c 1500 /tmp/r.html; echo; }; }
+ok() { local r c t; r=$(curl -s -o /tmp/r.html -w '%{http_code} %{time_total}' -b "$J" -c "$J" "$B$1"); c=${r% *}; t=${r#* }; echo "$c  ${t}s  $1"; [ "$c" = "200" ] || { F=1; head -c 1500 /tmp/r.html; echo; }; }
 
 T=$(curl -s -L -b "$J" -c "$J" "$B/Cuenta/Configurar" | tok)
 [ -n "$T" ] || { echo "Sin token en Configurar"; exit 1; }
@@ -31,4 +31,7 @@ ID=$(curl -s -b "$J" "$B/Contrataciones" | grep -o '/Contrataciones/Detalle/[0-9
 [ -n "$ID" ] && ok "$ID" || { echo "No apareció la contratación creada"; F=1; }
 ok "/Consultas/Responder?clave=generado-finde"
 ok "/Consultas/Responder?clave=fechas-disponibles"
+# Archivos propios (Bootstrap, íconos, jQuery) deben servirse desde la app
+for p in /lib/bootstrap/bootstrap.min.css /lib/bootstrap/bootstrap.bundle.min.js /lib/bootstrap-icons/bootstrap-icons.min.css \
+         /lib/bootstrap-icons/fonts/bootstrap-icons.woff2 /lib/jquery/jquery.min.js /sw.js /manifest.webmanifest; do ok "$p"; done
 exit $F

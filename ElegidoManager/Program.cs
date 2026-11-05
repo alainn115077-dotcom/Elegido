@@ -190,6 +190,18 @@ using (var scope = app.Services.CreateScope())
 
 app.UseForwardedHeaders();
 
+// Tiempo de respuesta del servidor (visible en las herramientas del navegador → Server-Timing)
+app.Use(async (ctx, next) =>
+{
+    var reloj = System.Diagnostics.Stopwatch.StartNew();
+    ctx.Response.OnStarting(() =>
+    {
+        ctx.Response.Headers["Server-Timing"] = $"app;dur={reloj.Elapsed.TotalMilliseconds:0}";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 // Encabezados de seguridad (anti-clickjacking, anti-XSS, sin rastreo)
 app.Use(async (ctx, next) =>
 {
@@ -205,7 +217,7 @@ app.Use(async (ctx, next) =>
         "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
         "img-src 'self' data: blob: https:; " +
         "frame-src 'self' https://maps.google.com https://www.google.com; " +
-        "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+        "connect-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     await next();
 });
 
@@ -225,7 +237,7 @@ app.UseStaticFiles(new StaticFileOptions
     // Estilos, scripts e imágenes se guardan en el celular: no se vuelven a descargar en cada página
     OnPrepareResponse = ctx =>
     {
-        var conVersion = ctx.Context.Request.Query.ContainsKey("v");
+        var conVersion = ctx.Context.Request.QueryString.HasValue;
         ctx.Context.Response.Headers.CacheControl = ctx.File.Name == "sw.js"
             ? "no-cache"
             : conVersion ? "public, max-age=31536000, immutable" : "public, max-age=86400";

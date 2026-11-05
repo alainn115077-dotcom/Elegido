@@ -1173,3 +1173,92 @@ a.mc-dia.libre:hover { background: var(--em-gold); color: #15110a; }
     .fc .fc-daygrid-day.dia-con-empalme .fc-daygrid-day-number { color: #ffd76a; font-weight: 800; }
 }
 @media (max-width: 991.98px) { .nav-inferior.nav-inferior-4 { grid-template-columns: repeat(4, 1fr); } }
+
+/* =====================================================================
+   ESTILO iPHONE (celular): áreas seguras, menú tipo Ajustes de iOS,
+   barra de pestañas translúcida y ventanas tipo "hoja" desde abajo
+   ===================================================================== */
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+
+@media (max-width: 991.98px) {
+    body.menu-abierto { overflow: hidden; }
+
+    /* Menú lateral: respeta la hora/notch y la barra de inicio del iPhone, y se desplaza completo */
+    .sidebar {
+        width: min(86vw, 320px); height: 100dvh;
+        padding: calc(.9rem + env(safe-area-inset-top)) .85rem calc(.85rem + env(safe-area-inset-bottom));
+        border-radius: 0 24px 24px 0; border-right: 0;
+        background: rgba(18, 18, 21, .94);
+        backdrop-filter: blur(28px) saturate(170%); -webkit-backdrop-filter: blur(28px) saturate(170%);
+    }
+    .brand { padding: .2rem .4rem 1rem; margin-bottom: .4rem; }
+    .brand-logo { width: 38px; height: 38px; }
+    .brand-name { font-size: 1.12rem; }
+    .brand-sub { font-size: .58rem; }
+    .nav-lateral { min-height: 0; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; gap: 4px; padding-bottom: .5rem; }
+    .nav-grupo { padding: .9rem .6rem .35rem; font-size: .62rem; }
+
+    /* Renglones como en Ajustes de iOS: ícono en cuadrito redondeado */
+    .nav-item-em { padding: .55rem .6rem; border-radius: 12px; font-size: .98rem; gap: .75rem; min-height: 46px; }
+    .nav-item-em i {
+        width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+        display: grid; place-items: center; font-size: .95rem;
+        background: rgba(255, 255, 255, .07); color: #d9d4c7;
+    }
+    .nav-item-em.active { background: rgba(201, 165, 76, .13); }
+    .nav-item-em.active::before { display: none; }
+    .nav-item-em.active i { background: var(--em-gold-grad); color: #120f06; }
+    .nav-item-em:active { background: rgba(255, 255, 255, .08); }
+
+    .sidebar-pie { padding-top: .8rem; flex-shrink: 0; }
+    .sidebar-pie .btn { min-height: 40px; border-radius: 12px; }
+
+    /* Barra superior tipo iOS: translúcida con título grande */
+    .topbar {
+        background: rgba(10, 10, 11, .78);
+        backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%);
+        border-bottom: .5px solid rgba(255, 255, 255, .08);
+        padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));
+    }
+    .topbar-titulo h1 { font-size: 1.32rem; font-weight: 800; letter-spacing: -.01em; }
+
+    /* Barra de pestañas tipo iOS */
+    .nav-inferior {
+        background: rgba(14, 14, 16, .82);
+        backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-top: .5px solid rgba(255, 255, 255, .1);
+        padding-left: max(.5rem, env(safe-area-inset-left)); padding-right: max(.5rem, env(safe-area-inset-right));
+    }
+    .nav-inferior a, .nav-inferior button { font-size: .64rem; letter-spacing: 0; min-height: 48px; }
+    .nav-inferior i { font-size: 1.35rem; }
+    .nav-inferior a:active, .nav-inferior button:active { transform: scale(.94); }
+
+    .pagina { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+}
+
+@media (max-width: 767.98px) {
+    /* Tarjetas, botones y campos más redondeados (estilo iOS) */
+    .tarjeta, .stat, .proxima { border-radius: 18px; }
+    .btn { border-radius: 12px; }
+    .form-control, .form-select { border-radius: 12px; -webkit-appearance: none; appearance: none; }
+    .form-select { background-position: right .8rem center; }
+    .btn:active { transform: scale(.98); }
+
+    /* Ventanas emergentes como "hoja" que sube desde abajo */
+    .modal-dialog, .modal-dialog-centered, .modal-dialog-scrollable {
+        margin: 0; max-width: 100%; width: 100%; min-height: 100%;
+        display: flex; align-items: flex-end;
+    }
+    .modal-dialog-scrollable { height: 100%; }
+    .modal-content {
+        width: 100%; max-height: 92dvh; border-radius: 22px 22px 0 0; border-bottom: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .modal-content::before {
+        content: ""; display: block; width: 38px; height: 5px; border-radius: 3px;
+        background: rgba(255, 255, 255, .22); margin: 8px auto 0;
+    }
+    .modal.fade .modal-dialog { transform: translateY(100%); transition: transform .32s cubic-bezier(.2, .8, .2, 1); }
+    .modal.show .modal-dialog { transform: none; }
+    .toast-container { left: 0; right: 0; padding-left: max(.75rem, env(safe-area-inset-left)) !important; padding-right: max(.75rem, env(safe-area-inset-right)) !important; }
+}

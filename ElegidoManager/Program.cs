@@ -29,6 +29,14 @@ if (!string.IsNullOrWhiteSpace(puerto))
 QuestPDF.Settings.License = LicenseType.Community;
 
 builder.WebHost.ConfigureKestrel(k => k.AddServerHeader = false);
+
+// Páginas comprimidas (cargan más rápido con datos móviles)
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    o.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
 builder.Services.AddHttpContextAccessor();
 
 // Base de datos: si hay cadena de MongoDB se usa MongoDB Atlas; si no, SQL Server (LocalDB / Azure SQL)
@@ -210,7 +218,19 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 var tiposArchivo = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
 tiposArchivo.Mappings[".webmanifest"] = "application/manifest+json";
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = tiposArchivo });
+app.UseResponseCompression();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = tiposArchivo,
+    // Estilos, scripts e imágenes se guardan en el celular: no se vuelven a descargar en cada página
+    OnPrepareResponse = ctx =>
+    {
+        var conVersion = ctx.Context.Request.Query.ContainsKey("v");
+        ctx.Context.Response.Headers.CacheControl = ctx.File.Name == "sw.js"
+            ? "no-cache"
+            : conVersion ? "public, max-age=31536000, immutable" : "public, max-age=86400";
+    }
+});
 
 app.UseRequestLocalization(new RequestLocalizationOptions
 {

@@ -1262,3 +1262,24 @@ html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%;
     .modal.show .modal-dialog { transform: none; }
     .toast-container { left: 0; right: 0; padding-left: max(.75rem, env(safe-area-inset-left)) !important; padding-right: max(.75rem, env(safe-area-inset-right)) !important; }
 }
+
+/* =====================================================================
+   RAPIDEZ EN CELULAR: sin zoom por doble toque, sin animaciones lentas
+   ===================================================================== */
+html, body { touch-action: manipulation; }
+a, button, .btn, .chip, .seg-btn, .nav-item-em, .fila-click { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.aparecer { animation-duration: .22s; }
+.stats > .aparecer:nth-child(n) { animation-delay: 0s; }
+@media (max-width: 991.98px) {
+    .aparecer { animation: none; }
+    .sidebar { transition-duration: .22s; }
+}
+
+/* Barra de carga instantánea al tocar un enlace */
+#barraCarga {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 3000; pointer-events: none;
+    background: var(--em-gold-grad); box-shadow: 0 0 10px rgba(201, 165, 76, .7);
+    transition: width .25s ease, opacity .2s ease; opacity: 0;
+}
+#barraCarga.activa { opacity: 1; width: 70%; transition: width 6s cubic-bezier(.1, .7, .1, 1), opacity .1s; }
+@supports (padding: env(safe-area-inset-top)) { #barraCarga { top: env(safe-area-inset-top); } }

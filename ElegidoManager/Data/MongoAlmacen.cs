@@ -80,19 +80,62 @@ namespace ElegidoManager.Data
         /// <summary>Carga todos los documentos de un tipo de entidad como objetos .NET.</summary>
         public List<object> LeerTodos(IEntityType tipo) => LeerTodosAsync(tipo).GetAwaiter().GetResult();
 
-        /// <summary>Lee varias colecciones a la vez (en paralelo) para que cada página cargue rápido.</summary>
+        // ---- Caché en memoria: solo se vuelve a leer todo de Atlas cuando alguien guardó un cambio ----
+        private const string ClaveVersion = "__version";
+        private readonly object _candado = new();
+        private long _versionCache = -1;
+        private Dictionary<string, List<BsonDocument>> _docsCache = new();
+
+        private long LeerVersion()
+        {
+            var d = Coleccion("Contadores").Find(Builders<BsonDocument>.Filter.Eq("_id", ClaveVersion)).FirstOrDefault();
+            return d == null ? 0 : d["valor"].ToInt64();
+        }
+
+        private Task SubirVersionAsync(CancellationToken ct) =>
+            Coleccion("Contadores").UpdateOneAsync(
+                Builders<BsonDocument>.Filter.Eq("_id", ClaveVersion),
+                Builders<BsonDocument>.Update.Inc("valor", 1L),
+                new UpdateOptions { IsUpsert = true }, ct);
+
+        /// <summary>
+        /// Lee varias colecciones. Primero consulta una sola "versión" (muy rápido); si nadie ha guardado
+        /// cambios desde la última vez, usa la copia en memoria en lugar de volver a descargar todo.
+        /// </summary>
         public List<object> LeerVarios(IEnumerable<IEntityType> tipos)
         {
-            var tareas = tipos.Select(LeerTodosAsync).ToList();
-            Task.WhenAll(tareas).GetAwaiter().GetResult();
-            return tareas.SelectMany(t => t.Result).ToList();
+            var lista = tipos.ToList();
+            var version = LeerVersion();
+            Dictionary<string, List<BsonDocument>> docs;
+            lock (_candado)
+            {
+                docs = version == _versionCache && lista.All(t => _docsCache.ContainsKey(t.ClrType.Name)) ? _docsCache : null!;
+            }
+            if (docs == null)
+            {
+                var tareas = lista.ToDictionary(t => t.ClrType.Name,
+                    t => Coleccion(t).Find(FilterDefinition<BsonDocument>.Empty).ToListAsync());
+                Task.WhenAll(tareas.Values).GetAwaiter().GetResult();
+                docs = tareas.ToDictionary(k => k.Key, k => k.Value.Result);
+                lock (_candado)
+                {
+                    _docsCache = docs;
+                    _versionCache = version;
+                }
+            }
+            return lista.SelectMany(t => Convertir(t, docs[t.ClrType.Name])).ToList();
         }
 
         public async Task<List<object>> LeerTodosAsync(IEntityType tipo)
         {
+            var docs = await Coleccion(tipo).Find(FilterDefinition<BsonDocument>.Empty).ToListAsync().ConfigureAwait(false);
+            return Convertir(tipo, docs);
+        }
+
+        private static List<object> Convertir(IEntityType tipo, List<BsonDocument> docs)
+        {
             var props = tipo.GetProperties().ToList();
             var lista = new List<object>();
-            var docs = await Coleccion(tipo).Find(FilterDefinition<BsonDocument>.Empty).ToListAsync().ConfigureAwait(false);
             foreach (var doc in docs)
             {
                 var entidad = Activator.CreateInstance(tipo.ClrType)!;
@@ -155,6 +198,18 @@ namespace ElegidoManager.Data
         public void Escribir(IEnumerable<CambioMongo> cambios) => EscribirAsync(cambios).GetAwaiter().GetResult();
 
         public async Task EscribirAsync(IEnumerable<CambioMongo> cambios, CancellationToken ct = default)
+        {
+            var lista = cambios.ToList();
+            await EscribirCambiosAsync(lista, ct);
+            // La bitácora no se guarda en caché: solo los demás cambios obligan a recargar
+            if (lista.Any(c => !SinCargar.Contains(c.Tipo.ClrType)))
+            {
+                lock (_candado) _versionCache = -1;
+                await SubirVersionAsync(ct);
+            }
+        }
+
+        private async Task EscribirCambiosAsync(List<CambioMongo> cambios, CancellationToken ct)
         {
             foreach (var grupo in cambios.GroupBy(c => c.Tipo))
             {

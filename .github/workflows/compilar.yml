@@ -1,0 +1,35 @@
+name: Compilar ELEGIDO MANAGER
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  web:
+    name: App web (la que usa Vercel)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compilar
+        run: dotnet build ElegidoManager/ElegidoManager.csproj -c Release
+      - name: Probar imagen Docker (igual que Vercel)
+        run: docker build -t elegido-manager .
+
+  escritorio:
+    name: App de escritorio (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Crear ElegidoManager.exe
+        run: dotnet publish ElegidoManager.Escritorio/ElegidoManager.Escritorio.csproj -c Release -o AppEscritorio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElegidoManager-Escritorio
+          path: AppEscritorio/ElegidoManager.exe

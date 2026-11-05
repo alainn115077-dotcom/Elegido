@@ -312,7 +312,7 @@ namespace ElegidoManager.Services
             var horario = c.Hora == null ? "Por confirmar"
                 : $"{DateTime.Today.Add(c.Hora.Value).ToString("h:mm tt", Mx)} a {DateTime.Today.Add(c.Hora.Value).AddHours(horas).ToString("h:mm tt", Mx)}";
             return "📝 *Resumen de tu evento*\n" +
-                   $"• Fecha: {Cap(c.Fecha!.Value.ToString("dddd d 'de' MMMM yyyy", Mx))}\n" +
+                   $"• Fecha: {Cap(c.Fecha!.Value.ToString("dddd d 'de' MMMM 'de' yyyy", Mx))}\n" +
                    $"• Horario: {horario} ({horas} h)\n" +
                    $"• Lugar: {c.Direccion ?? "Por confirmar"}\n" +
                    $"• A nombre de: {c.Nombre}\n" +

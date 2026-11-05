@@ -7,7 +7,7 @@ namespace ElegidoManager.Services
     public static class Calendario
     {
         private static string Esc(string? t) => (t ?? "")
-            .Replace("\\", "\\\\").Replace(";", "\;").Replace(",", "\\,").Replace("\r", "").Replace("\n", "\\n");
+            .Replace("\\", "\\\\").Replace(";", "\\;").Replace(",", "\\,").Replace("\r", "").Replace("\n", "\\n");
 
         private static string Linea(string texto)
         {

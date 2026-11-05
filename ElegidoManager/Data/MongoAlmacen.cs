@@ -34,7 +34,11 @@ namespace ElegidoManager.Data
         private readonly IMongoDatabase _db;
         public MongoAlmacen(string uri, string baseDatos)
         {
-            var cliente = new MongoClient(uri);
+            var ajustes = MongoClientSettings.FromConnectionString(uri);
+            // Si Atlas no responde (por ejemplo, IP no permitida en Network Access) falla rápido con un error claro
+            ajustes.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+            ajustes.ConnectTimeout = TimeSpan.FromSeconds(10);
+            var cliente = new MongoClient(ajustes);
             _db = cliente.GetDatabase(baseDatos);
         }
 

@@ -137,14 +137,27 @@ var ladasUsa = app.Configuration.GetSection("LadasEstadosUnidos").GetChildren()
 if (ladasUsa.Count > 0) WhatsApp.LadasEstadosUnidos = ladasUsa;
 
 // Crea la base de datos y sus tablas en SQL Server si todavía no existen.
+if (AppDbContext.ModoMongo)
+{
+    // En la nube el servidor debe abrir su puerto de inmediato: MongoDB se prepara en segundo plano
+    app.Lifetime.ApplicationStarted.Register(() => Task.Run(() =>
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            ActualizarEsquema.AplicarMongo(scope.ServiceProvider.GetRequiredService<AppDbContext>());
+            app.Logger.LogInformation("MongoDB listo.");
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex, "No se pudo conectar a MongoDB. Revisa la cadena ConnectionStrings__MongoDB y que Atlas → Network Access permita 0.0.0.0/0.");
+        }
+    }));
+}
+else
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (AppDbContext.ModoMongo)
-    {
-        ActualizarEsquema.AplicarMongo(db);
-    }
-    else
     // Reintenta unas veces: una base en la nube "dormida" tarda en despertar
     for (var intento = 1; ; intento++)
     {

@@ -1,0 +1,68 @@
+@model NuevoUsuarioViewModel
+@{
+    ViewData["Title"] = "Nuevo usuario";
+}
+<div class="row justify-content-center">
+    <div class="col-xl-6">
+        <div class="tarjeta aparecer">
+            <form asp-action="Crear" method="post" class="form-em" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alerta alerta-error"></div>
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label asp-for="NombreCompleto" class="form-label"></label>
+                        <input asp-for="NombreCompleto" class="form-control" autofocus />
+                        <span asp-validation-for="NombreCompleto" class="text-error"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="Rol" class="form-label"></label>
+                        <select asp-for="Rol" class="form-select" id="selRol">
+                            @foreach (var r in Catalogos.Roles)
+                            {
+                                <option value="@r" selected="@(Model.Rol == r)">@r</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 @(Catalogos.LigaIntegrante(Model.Rol) ? "" : "d-none")" id="bloqueIntegrante">
+                        <label asp-for="IntegranteId" class="form-label"></label>
+                        <select asp-for="IntegranteId" class="form-select">
+                            <option value="">— Elige al integrante —</option>
+                            @foreach (var i in (ViewBag.Integrantes as List<Integrante>) ?? new())
+                            {
+                                <option value="@i.Id" selected="@(Model.IntegranteId == i.Id)">@i.NombreCompleto</option>
+                            }
+                        </select>
+                        <small class="text-secundario">Así podrá ver en su cuenta lo que te debe y lo que le debes.</small>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Usuario" class="form-label"></label>
+                        <input asp-for="Usuario" class="form-control" autocomplete="off" />
+                        <span asp-validation-for="Usuario" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Contrasena" class="form-label"></label>
+                        <input asp-for="Contrasena" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Contrasena" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmarContrasena" class="form-label"></label>
+                        <input asp-for="ConfirmarContrasena" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmarContrasena" class="text-error"></span>
+                    </div>
+                </div>
+                <p class="text-secundario small mt-3 mb-0"><strong>Administrador</strong>: acceso total, incluida la gestión de usuarios. <strong>Colaborador</strong>: todo excepto usuarios y finanzas, y ve sus deudas contigo. <strong>Integrante</strong>: solo ve Inicio, Agenda y sus propias deudas contigo; nada de pagos del negocio ni datos de clientes.</p>
+                <div class="acciones-form">
+                    <a asp-action="Index" class="btn btn-ghost">Cancelar</a>
+                    <button type="submit" class="btn btn-oro"><i class="bi bi-check2"></i> Crear usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+
+<script>
+    (function () {
+        const rol = document.getElementById('selRol'), bloque = document.getElementById('bloqueIntegrante');
+        if (rol && bloque) rol.addEventListener('change', () => bloque.classList.toggle('d-none', rol.value !== '@Catalogos.RolIntegrante' && rol.value !== '@Catalogos.RolColaborador'));
+    })();
+</script>

@@ -1,0 +1,79 @@
+@model List<PreguntaPredefinida>
+@{
+    ViewData["Title"] = "Consultas rápidas";
+    ViewData["Subtitulo"] = "Respuestas al instante con la información real de la base de datos";
+    var mx = new CultureInfo("es-MX");
+    var nombre = (User.FindFirst("NombreCompleto")?.Value ?? "").Split(' ').FirstOrDefault();
+    var saludo = string.IsNullOrEmpty(nombre) ? "¡Hola!" : $"¡Hola, {nombre}!";
+    var hoy = DateTime.Today;
+    var meses = Enumerable.Range(0, 12).Select(i => new DateTime(hoy.Year, hoy.Month, 1).AddMonths(i)).ToList();
+    var iconos = new Dictionary<string, string> { ["Agenda"] = "bi-calendar3", ["Finanzas"] = "bi-cash-stack", ["Contrataciones"] = "bi-journal-check" };
+}
+<div class="chat-app aparecer">
+    <aside class="chat-preguntas" id="panelPreguntas">
+        @foreach (var grupo in Model.GroupBy(p => p.Categoria))
+        {
+            <div class="grupo-preguntas">
+                <h3><i class="bi @iconos.GetValueOrDefault(grupo.Key, "bi-question-circle")"></i> @grupo.Key</h3>
+                @foreach (var p in grupo)
+                {
+                    <button type="button" class="pregunta" data-clave="@p.Clave" data-requiere="@p.Requiere" data-texto="@p.Texto">
+                        <i class="bi @p.Icono"></i><span>@p.Texto</span>
+                    </button>
+                }
+            </div>
+        }
+    </aside>
+
+    <section class="chat">
+        <header class="chat-cabecera">
+            <span class="chat-avatar"><img src="~/img/logo.svg" alt="" /></span>
+            <div>
+                <strong>Asistente de consultas</strong>
+                <small><span class="punto-en-linea"></span> Conectado a SQL Server · sin inteligencia artificial</small>
+            </div>
+            <button type="button" class="btn btn-icon ms-auto" id="btnLimpiar" title="Limpiar conversación"><i class="bi bi-arrow-counterclockwise"></i></button>
+        </header>
+
+        <div class="chat-mensajes" id="mensajes" aria-live="polite">
+            <div class="msg sistema">
+                <div class="burbuja">
+                    <p class="msg-titulo">@saludo</p>
+                    <p>Elige una pregunta y la consulto directamente en la base de datos del grupo. Algunas te pedirán una fecha o un mes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-sugerencias" id="sugerencias">
+            @foreach (var p in Model.Take(6))
+            {
+                <button type="button" class="chip" data-clave="@p.Clave" data-requiere="@p.Requiere" data-texto="@p.Texto">@p.Texto</button>
+            }
+        </div>
+
+        <!-- Selectores que aparecen cuando la pregunta requiere un dato -->
+        <div class="chat-entrada d-none" id="entradaFecha">
+            <label for="inputFecha"><i class="bi bi-calendar-event"></i> Elige la fecha</label>
+            <input type="date" id="inputFecha" class="form-control" value="@hoy.ToString("yyyy-MM-dd")" />
+            <button type="button" class="btn btn-oro" id="btnEnviarFecha"><i class="bi bi-send"></i> Consultar</button>
+            <button type="button" class="btn btn-icon" data-cerrar-entrada><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="chat-entrada d-none" id="entradaMes">
+            <label><i class="bi bi-calendar3"></i> Elige el mes</label>
+            <div class="chips-mes">
+                @foreach (var m in meses)
+                {
+                    <button type="button" class="chip" data-mes="@m.ToString("yyyy-MM")">@m.ToString(m.Year == hoy.Year ? "MMMM" : "MMM yyyy", mx)</button>
+                }
+            </div>
+            <button type="button" class="btn btn-icon" data-cerrar-entrada><i class="bi bi-x-lg"></i></button>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        window.EM_RUTAS = { responder: '@Url.Action("Responder", "Consultas")' };
+    </script>
+    <script src="~/js/consultas.js" asp-append-version="true"></script>
+}

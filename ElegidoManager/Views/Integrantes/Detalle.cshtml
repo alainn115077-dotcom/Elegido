@@ -1,0 +1,91 @@
+@model Integrante
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = Model.NombreCompleto;
+    ViewData["Subtitulo"] = "Cuentas pendientes con " + Model.NombreCompleto;
+    var meDebe = Model.Movimientos.Where(m => m.Direccion == DireccionDeuda.MeDebe).OrderBy(m => m.Liquidado).ThenByDescending(m => m.Fecha).ToList();
+    var leDebo = Model.Movimientos.Where(m => m.Direccion == DireccionDeuda.LeDebo).OrderBy(m => m.Liquidado).ThenByDescending(m => m.Fecha).ToList();
+    var totalMeDebe = meDebe.Where(m => !m.Liquidado).Sum(m => m.Monto);
+    var totalLeDebo = leDebo.Where(m => !m.Liquidado).Sum(m => m.Monto);
+    var primerNombre = Model.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.NombreCompleto;
+}
+
+<div class="barra-herramientas">
+    <a asp-action="Index" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Integrantes</a>
+    <button type="button" class="btn btn-ghost" data-bs-toggle="collapse" data-bs-target="#editarIntegrante"><i class="bi bi-pencil"></i> Editar datos</button>
+</div>
+
+<div class="collapse mb-4" id="editarIntegrante">
+    <div class="tarjeta">
+        <form asp-action="Editar" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 flex-wrap align-items-end">
+            <div><label class="form-label">Nombre</label><input name="nombre" value="@Model.NombreCompleto" class="form-control" maxlength="120" required /></div>
+            <div><label class="form-label">Teléfono (opcional)</label><input name="telefono" value="@Model.Telefono" class="form-control" inputmode="tel" maxlength="12" data-formato-telefono /></div>
+            <button class="btn btn-oro">Guardar</button>
+        </form>
+        <form asp-action="Eliminar" asp-route-id="@Model.Id" method="post" class="mt-3" data-confirmar="¿Eliminar a @(Model.NombreCompleto) y todas sus cuentas?">
+            <button class="btn btn-sm btn-ghost-peligro"><i class="bi bi-trash"></i> Eliminar integrante</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var lado in new[] { DireccionDeuda.MeDebe, DireccionDeuda.LeDebo })
+    {
+        var esMeDebe = lado == DireccionDeuda.MeDebe;
+        var lista = esMeDebe ? meDebe : leDebo;
+        var total = esMeDebe ? totalMeDebe : totalLeDebo;
+        <div class="col-lg-6">
+            <section class="tarjeta aparecer h-100 cuenta @(esMeDebe ? "cuenta-me-debe" : "cuenta-le-debo")">
+                <div class="tarjeta-cabecera">
+                    <h2><i class="bi @(esMeDebe ? "bi-arrow-down-left-circle" : "bi-arrow-up-right-circle")"></i> @(esMeDebe ? $"{primerNombre} me debe" : $"Le debo a {primerNombre}")</h2>
+                    <strong class="cuenta-total">@total.ToString("C0", mx)</strong>
+                </div>
+
+                <form asp-action="AgregarMovimiento" method="post" class="anotar">
+                    <input type="hidden" name="integranteId" value="@Model.Id" />
+                    <input type="hidden" name="direccion" value="@lado" />
+                    <div class="input-icono">
+                        <i class="bi bi-currency-dollar"></i>
+                        <input type="number" name="monto" step="1" min="1" class="form-control" placeholder="Cantidad" required />
+                    </div>
+                    <button class="btn btn-oro"><i class="bi bi-plus-lg"></i> Anotar</button>
+                </form>
+
+                @if (lista.Count == 0)
+                {
+                    <p class="text-secundario mb-0 mt-3">@(esMeDebe ? "No te debe nada." : "No le debes nada.")</p>
+                }
+                else
+                {
+                    <ul class="lista-deudas">
+                        @foreach (var m in lista)
+                        {
+                            <li class="@(m.Liquidado ? "pagada" : "")">
+                                <div class="deuda-info">
+                                    <strong>@m.Monto.ToString("C0", mx)</strong>
+                                    <small>@(string.IsNullOrEmpty(m.Concepto) ? "" : m.Concepto + " · ")@m.Fecha.ToString("d MMM yyyy", mx)@(m.Liquidado && m.FechaLiquidado.HasValue ? " · pagado el " + m.FechaLiquidado.Value.ToString("d MMM", mx) : "")</small>
+                                </div>
+                                <form asp-action="Liquidar" asp-route-id="@m.Id" method="post">
+                                    <button class="btn btn-sm @(m.Liquidado ? "btn-ghost" : "btn-verde")" title="@(m.Liquidado ? "Regresar a pendiente" : "Marcar como pagado")">
+                                        <i class="bi @(m.Liquidado ? "bi-arrow-counterclockwise" : "bi-check2")"></i> @(m.Liquidado ? "Deshacer" : (esMeDebe ? "Ya me pagó" : "Ya le pagué"))
+                                    </button>
+                                </form>
+                                <form asp-action="EliminarMovimiento" asp-route-id="@m.Id" method="post" data-confirmar="¿Borrar este registro?">
+                                    <button class="btn btn-icon" title="Borrar"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (esMeDebe && total > 0 && !string.IsNullOrEmpty(Model.Telefono))
+                {
+                    <button type="button" class="btn btn-ghost btn-sm mt-3" data-wa-telefono="@WhatsApp.NormalizarTelefono(Model.Telefono)" data-wa-destino="@Model.NombreCompleto"
+                            data-wa-titulo="Recordatorio" data-wa-mensaje="Qué onda @primerNombre, nomás para recordarte que quedaron pendientes @total.ToString("C0", mx). ¡Gracias!">
+                        <i class="bi bi-whatsapp text-wa"></i> Recordarle por WhatsApp
+                    </button>
+                }
+            </section>
+        </div>
+    }
+</div>

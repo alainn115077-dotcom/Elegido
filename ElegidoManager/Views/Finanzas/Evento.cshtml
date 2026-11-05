@@ -1,0 +1,138 @@
+@model PagosEventoViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Pagos del evento";
+    ViewData["Subtitulo"] = $"{Model.Cliente} · {Model.Inicio.ToString("dddd d 'de' MMMM", mx)}, {(Model.Inicio.TimeOfDay == TimeSpan.Zero ? "" : Model.Inicio.ToString("h:mm tt", mx) + " – " + Model.Fin.ToString("h:mm tt", mx))}";
+    string Inv(decimal? d) => d.HasValue ? d.Value.ToString("0.##", CultureInfo.InvariantCulture) : "";
+}
+<div class="barra-herramientas">
+    <a asp-action="PorEvento" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Por evento</a>
+    <a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@Model.ContratacionId" class="enlace-oro">Ver contratación <i class="bi bi-arrow-right"></i></a>
+</div>
+
+<form asp-action="Evento" method="post" id="formPagosEvento" novalidate
+      data-precio="@Model.Precio.ToString(CultureInfo.InvariantCulture)" data-anticipo="@Model.Anticipo.ToString(CultureInfo.InvariantCulture)">
+    <input type="hidden" asp-for="ContratacionId" />
+    <div asp-validation-summary="ModelOnly" class="alerta alerta-error mb-3"></div>
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <section class="tarjeta aparecer">
+                <div class="tarjeta-cabecera"><h2><i class="bi bi-people"></i> Pagos</h2></div>
+
+                <div class="filas-pago">
+                    @for (var i = 0; i < Model.Integrantes.Count; i++)
+                    {
+                        <div class="fila-pago">
+                            <span class="avatar">@Model.Integrantes[i].Nombre.Substring(0, 1).ToUpper()</span>
+                            <label for="monto-@i">@Model.Integrantes[i].Nombre</label>
+                            <input type="hidden" name="Integrantes[@i].IntegranteId" value="@Model.Integrantes[i].IntegranteId" />
+                            <div class="sugerencias-pago">
+                                @foreach (var sug in Model.Integrantes[i].Sugerencias)
+                                {
+                                    <button type="button" class="chip" data-para="monto-@i" data-monto="@sug.ToString("0", CultureInfo.InvariantCulture)">@sug.ToString("C0", mx)</button>
+                                }
+                            </div>
+                            <div class="input-icono">
+                                <i class="bi bi-currency-dollar"></i>
+                                <input type="number" id="monto-@i" name="Integrantes[@i].Monto" value="@Inv(Model.Integrantes[i].Monto)" step="1" min="0"
+                                       class="form-control monto-integrante" placeholder="0" inputmode="numeric" />
+                            </div>
+                        </div>
+                    }
+
+                    <div class="fila-pago separada">
+                        <span class="avatar avatar-gasolina"><i class="bi bi-fuel-pump"></i></span>
+                        <label for="Gasolina">Gasolina</label>
+                        <div class="input-icono">
+                            <i class="bi bi-currency-dollar"></i>
+                            <input type="number" id="Gasolina" name="Gasolina" value="@Inv(Model.Gasolina)" step="1" min="0" class="form-control" placeholder="0" inputmode="numeric" />
+                        </div>
+                    </div>
+
+                    <div class="fila-pago fila-otro">
+                        <span class="avatar avatar-gasolina"><i class="bi bi-three-dots"></i></span>
+                        <input type="text" name="OtroConcepto" value="@Model.OtroConcepto" class="form-control" maxlength="150" placeholder="Otro: ¿qué fue? (ej. comida, cuerdas)" />
+                        <div class="input-icono">
+                            <i class="bi bi-currency-dollar"></i>
+                            <input type="number" id="OtroMonto" name="OtroMonto" value="@Inv(Model.OtroMonto)" step="1" min="0" class="form-control" placeholder="0" inputmode="numeric" />
+                        </div>
+                    </div>
+
+                    <div class="fila-pago">
+                        <span class="avatar avatar-anticipo"><i class="bi bi-cash-coin"></i></span>
+                        <label>Anticipo <small class="text-secundario d-block">ya lo habías recibido, no se cuenta</small></label>
+                        <div class="valor-calculado text-end">@Model.Anticipo.ToString("C0", mx)</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-5">
+            <section class="tarjeta tarjeta-fija aparecer">
+                <div class="tarjeta-cabecera"><h2><i class="bi bi-calculator"></i> Cuentas del evento</h2></div>
+                <ul class="cuentas-evento">
+                    <li><span>Precio del evento</span><strong>@Model.Precio.ToString("C0", mx)</strong></li>
+                    <li class="resta"><span>− Anticipo</span><strong>@Model.Anticipo.ToString("C0", mx)</strong></li>
+                    <li class="subtotal"><span>Cobrado el día del evento</span><strong id="cobrado"></strong></li>
+                    <li class="resta"><span>− Pagos a integrantes</span><strong id="totalIntegrantes"></strong></li>
+                    <li class="resta"><span>− Gasolina</span><strong id="totalGasolina"></strong></li>
+                    <li class="resta"><span>− Otro</span><strong id="totalOtro"></strong></li>
+                </ul>
+                <div class="ganancia-total">
+                    <span>Tu ganancia</span>
+                    <strong id="ganancia"></strong>
+                </div>
+
+                @if (Model.Saldo > 0)
+                {
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" asp-for="ClientePagoResto" />
+                        <label class="form-check-label" asp-for="ClientePagoResto">El cliente ya pagó el resto (@Model.Saldo.ToString("C0", mx))</label>
+                    </div>
+                }
+                else
+                {
+                    <input type="hidden" name="ClientePagoResto" value="false" />
+                    <p class="text-verde small mt-3 mb-0"><i class="bi bi-check2-all"></i> El cliente ya liquidó este evento.</p>
+                }
+
+                <button type="submit" class="btn btn-oro btn-lg w-100 mt-4"><i class="bi bi-check2-circle"></i> Guardar pagos</button>
+            </section>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('formPagosEvento');
+            const precio = parseFloat(form.dataset.precio) || 0;
+            const anticipo = parseFloat(form.dataset.anticipo) || 0;
+            const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+            const val = el => parseFloat(el.value) || 0;
+            function calcular() {
+                const integrantes = [...document.querySelectorAll('.monto-integrante')].reduce((t, el) => t + val(el), 0);
+                const gasolina = val(document.getElementById('Gasolina'));
+                const otro = val(document.getElementById('OtroMonto'));
+                const cobrado = precio - anticipo;
+                const ganancia = cobrado - integrantes - gasolina - otro;
+                document.getElementById('totalOtro').textContent = fmt.format(otro);
+                document.getElementById('cobrado').textContent = fmt.format(cobrado);
+                document.getElementById('totalIntegrantes').textContent = fmt.format(integrantes);
+                document.getElementById('totalGasolina').textContent = fmt.format(gasolina);
+                const g = document.getElementById('ganancia');
+                g.textContent = fmt.format(ganancia);
+                g.classList.toggle('text-rojo', ganancia < 0);
+            }
+            form.addEventListener('input', calcular);
+            document.querySelectorAll('[data-para]').forEach(b => b.addEventListener('click', () => {
+                const el = document.getElementById(b.dataset.para);
+                el.value = b.dataset.monto;
+                document.querySelectorAll('[data-para="' + b.dataset.para + '"]').forEach(x => x.classList.toggle('activo', x === b));
+                calcular();
+            }));
+            calcular();
+        })();
+    </script>
+}

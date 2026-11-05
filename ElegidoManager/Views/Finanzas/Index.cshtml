@@ -1,0 +1,96 @@
+@model FinanzasViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Finanzas";
+    ViewData["Subtitulo"] = "Movimientos de " + Model.Mes.ToString("MMMM yyyy", mx);
+    var anterior = Model.Mes.AddMonths(-1).ToString("yyyy-MM");
+    var siguiente = Model.Mes.AddMonths(1).ToString("yyyy-MM");
+    var maxCat = Model.GastosPorCategoria.Count == 0 ? 1 : Model.GastosPorCategoria.Max(x => x.Total);
+}
+<div class="barra-herramientas">
+    <partial name="_Pestanas" />
+    <div class="selector-mes">
+        <a asp-action="Index" asp-route-mes="@anterior" class="btn btn-icon"><i class="bi bi-chevron-left"></i></a>
+        <form method="get"><input type="month" name="mes" value="@Model.Mes.ToString("yyyy-MM")" class="form-control" onchange="this.form.submit()" /></form>
+        <a asp-action="Index" asp-route-mes="@siguiente" class="btn btn-icon"><i class="bi bi-chevron-right"></i></a>
+    </div>
+</div>
+
+<section class="stats stats-3">
+    <div class="stat aparecer">
+        <span class="stat-icono verde"><i class="bi bi-graph-up-arrow"></i></span>
+        <span class="stat-etiqueta">Ingresos ganados</span>
+        <span class="stat-valor text-verde">@Model.IngresosGanados.ToString("C0", mx)</span>
+        <span class="stat-pie">tu ganancia en @Model.EventosConGanancia evento(s) con pagos registrados</span>
+    </div>
+    <div class="stat aparecer">
+        <span class="stat-icono"><i class="bi bi-cash-coin"></i></span>
+        <span class="stat-etiqueta">Anticipos</span>
+        <span class="stat-valor">@Model.AnticiposEjecutados.ToString("C0", mx)</span>
+        <span class="stat-pie">recibidos este mes · @Model.EventosConAnticipo contratación(es)</span>
+    </div>
+    <div class="stat stat-oro aparecer">
+        <span class="stat-icono"><i class="bi bi-trophy"></i></span>
+        <span class="stat-etiqueta">Ganancias totales del mes</span>
+        <span class="stat-valor">@Model.GananciasTotales.ToString("C0", mx)</span>
+        <span class="stat-pie">ingresos ganados + anticipos</span>
+    </div>
+</section>
+
+<div class="row g-4 mt-1">
+    <div class="col-xl-8">
+        <section class="tarjeta p-0 aparecer">
+            <div class="tarjeta-cabecera px-4 pt-4">
+                <h2><i class="bi bi-list-columns-reverse"></i> Historial de movimientos</h2>
+                <a asp-action="CrearGasto" class="btn btn-ghost btn-sm"><i class="bi bi-plus-lg"></i> Registrar gasto</a>
+            </div>
+            @if (Model.Movimientos.Count == 0)
+            {
+                @await Html.PartialAsync("_Vacio", new Vacio("bi-cash", "Sin movimientos", "No hay pagos ni gastos registrados en este mes."))
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="tabla-em">
+                        <thead><tr><th>Fecha</th><th>Concepto</th><th class="d-none d-md-table-cell">Detalle</th><th class="text-end">Monto</th></tr></thead>
+                        <tbody>
+                            @foreach (var m in Model.Movimientos)
+                            {
+                                var url = m.EsIngreso
+                                    ? Url.Action("Detalle", "Contrataciones", new { id = m.ContratacionId })
+                                    : Url.Action("EditarGasto", new { id = m.RegistroId });
+                                <tr class="fila-click" data-href="@url">
+                                    <td class="text-nowrap">@m.Fecha.ToString("d MMM", mx)</td>
+                                    <td>@m.Concepto</td>
+                                    <td class="d-none d-md-table-cell text-secundario">@m.Detalle</td>
+                                    <td class="text-end fw-semibold @(m.EsIngreso ? "text-verde" : "text-rojo")">@(m.EsIngreso ? "+" : "−")@m.Monto.ToString("C", mx)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+    <div class="col-xl-4">
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-pie-chart"></i> Gastos por categoría</h2></div>
+            @if (Model.GastosPorCategoria.Count == 0)
+            {
+                <p class="text-secundario mb-0">Sin gastos en este mes.</p>
+            }
+            else
+            {
+                <ul class="barras-h">
+                    @foreach (var g in Model.GastosPorCategoria)
+                    {
+                        <li>
+                            <div class="d-flex justify-content-between"><span>@g.Categoria</span><strong>@g.Total.ToString("C0", mx)</strong></div>
+                            <div class="progreso delgado"><span style="width:@((int)Math.Round(g.Total / maxCat * 100))%"></span></div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+@using ElegidoManager.Controllers
+@model ContratacionesIndexViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Contrataciones";
+    ViewData["Subtitulo"] = $"{Model.Items.Count} resultado(s)";
+    string Tab(string v) => Model.Vista == v ? "activo" : "";
+}
+<div class="barra-herramientas">
+    <div class="segmentado">
+        <a class="seg-btn @Tab("proximas")" asp-route-vista="proximas" asp-route-estado="@Model.Estado" asp-route-q="@Model.Q">Próximas</a>
+        <a class="seg-btn @Tab("anteriores")" asp-route-vista="anteriores" asp-route-estado="@Model.Estado" asp-route-q="@Model.Q">Anteriores</a>
+        <a class="seg-btn @Tab("todas")" asp-route-vista="todas" asp-route-estado="@Model.Estado" asp-route-q="@Model.Q">Todas</a>
+    </div>
+    <a asp-action="Crear" class="btn btn-oro solo-escritorio"><i class="bi bi-plus-lg"></i> Nueva</a>
+</div>
+
+<form method="get" class="filtros tarjeta aparecer">
+    <input type="hidden" name="vista" value="@Model.Vista" />
+    <div class="buscador flex-fill">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="@Model.Q" class="form-control" placeholder="Cliente, teléfono o dirección" />
+    </div>
+    <input type="date" name="desde" value="@(Model.Desde?.ToString("yyyy-MM-dd"))" class="form-control" title="Desde" />
+    <input type="date" name="hasta" value="@(Model.Hasta?.ToString("yyyy-MM-dd"))" class="form-control" title="Hasta" />
+    <button class="btn btn-ghost"><i class="bi bi-funnel"></i> Filtrar</button>
+</form>
+
+<div class="tarjeta p-0 aparecer mt-3">
+    @if (Model.Items.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-journal-x", "Sin contrataciones", "No hay registros con estos filtros."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th class="d-none d-lg-table-cell">Dirección</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Saldo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.Items)
+                    {
+                        <tr class="fila-click" data-href="@Url.Action("Detalle", new { id = e.ContratacionId })">
+                            <td class="text-nowrap"><strong>@e.Inicio.ToString("ddd d MMM", mx)</strong><br /><small class="@(e.HorarioPendiente ? "texto-pendiente" : "text-secundario")">@e.Inicio.ToString("yyyy", mx) · @(e.HorarioPendiente ? "horario pendiente" : e.Inicio.ToString("h:mm tt", mx))</small></td>
+                            <td>@e.Cliente</td>
+                            <td class="d-none d-lg-table-cell @(e.LugarPendiente ? "texto-pendiente" : "")">@e.Ubicacion</td>
+                            <td class="text-end">@e.Precio.ToString("C0", mx)</td>
+                            <td class="text-end @(e.Saldo > 0 && e.Estado != EstadoContratacion.Cancelada ? "text-amarillo" : "text-secundario")">@(e.Estado == EstadoContratacion.Cancelada ? "—" : e.Saldo.ToString("C0", mx))</td>
+                            <td class="text-end text-nowrap">
+                                <a href="@WhatsApp.Enlace(e.Telefono)" target="_blank" rel="noopener" class="btn btn-icon btn-wa-sutil" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                                <form asp-action="Eliminar" asp-route-id="@e.ContratacionId" method="post" class="d-inline"
+                                      data-confirmar="¿Borrar DEFINITIVAMENTE la contratación de @(e.Cliente) del @e.Inicio.ToString("d 'de' MMMM", mx)? Se eliminan también sus pagos y documentos.">
+                                    <button class="btn btn-icon btn-borrar" title="Borrar definitivamente"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

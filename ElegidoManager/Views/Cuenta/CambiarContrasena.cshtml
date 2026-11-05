@@ -1,0 +1,29 @@
+@model CambiarContrasenaViewModel
+@{
+    ViewData["Title"] = "Cambiar contraseña";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <div class="tarjeta">
+            <form asp-action="CambiarContrasena" method="post" class="form-em" novalidate>
+                <div class="mb-3">
+                    <label asp-for="Actual" class="form-label"></label>
+                    <input asp-for="Actual" class="form-control" autocomplete="current-password" />
+                    <span asp-validation-for="Actual" class="text-error"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Nueva" class="form-label"></label>
+                    <input asp-for="Nueva" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Nueva" class="text-error"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Confirmar" class="form-label"></label>
+                    <input asp-for="Confirmar" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Confirmar" class="text-error"></span>
+                </div>
+                <button type="submit" class="btn btn-oro">Guardar contraseña</button>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,45 @@
+@model Cliente
+@{
+    var edicion = Model.Id > 0;
+    ViewData["Title"] = edicion ? "Editar cliente" : "Nuevo cliente";
+}
+<div class="row justify-content-center">
+    <div class="col-xl-7">
+        <div class="tarjeta aparecer">
+            <form asp-action="@(edicion ? "Editar" : "Crear")" asp-route-id="@(edicion ? Model.Id.ToString() : null)" method="post" class="form-em" novalidate>
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="alerta alerta-error"></div>
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label asp-for="NombreCompleto" class="form-label"></label>
+                        <input asp-for="NombreCompleto" class="form-control" autofocus />
+                        <span asp-validation-for="NombreCompleto" class="text-error"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="Telefono" class="form-label"></label>
+                        <input asp-for="Telefono" class="form-control" inputmode="tel" placeholder="899 123 4567" data-formato-telefono maxlength="12" />
+                        <span asp-validation-for="Telefono" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Ciudad" class="form-label"></label>
+                        <input asp-for="Ciudad" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Correo" class="form-label"></label>
+                        <input asp-for="Correo" class="form-control" type="email" />
+                        <span asp-validation-for="Correo" class="text-error"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Notas" class="form-label"></label>
+                        <textarea asp-for="Notas" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="acciones-form">
+                    <a asp-action="@(edicion ? "Detalle" : "Index")" asp-route-id="@(edicion ? Model.Id.ToString() : null)" class="btn btn-ghost">Cancelar</a>
+                    <button type="submit" class="btn btn-oro"><i class="bi bi-check2"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

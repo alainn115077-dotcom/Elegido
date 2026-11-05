@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Agenda";
+    ViewData["Subtitulo"] = "Calendario de presentaciones del grupo";
+}
+<div class="row g-4">
+    <div class="col-xl-9">
+        <section class="tarjeta tarjeta-calendario aparecer">
+            <div id="calendario"></div>
+        </section>
+    </div>
+    <div class="col-xl-3 d-flex flex-column gap-4">
+        <input type="checkbox" id="verCanceladas" class="d-none" checked />
+        @if (!User.IsInRole(Catalogos.RolIntegrante))
+        {
+            <a asp-action="Anteriores" class="btn btn-ghost"><i class="bi bi-clock-history"></i> Consultar eventos anteriores</a>
+        }
+    </div>
+</div>
+
+<!-- Ventana del día -->
+<div class="modal fade" id="modalDia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="diaTitulo">Día</h5>
+                    <small id="diaResumen" class="text-secundario"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="diaContenido"></div>
+            <div class="modal-footer" id="diaPie"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.15/locales/es.global.min.js"></script>
+    <script>
+        window.EM_RUTAS = {
+            eventos: '@Url.Action("Eventos", "Agenda")',
+            dia: '@Url.Action("Dia", "Agenda")',
+            nueva: '@Url.Action("Crear", "Contrataciones")'
+        };
+    </script>
+    <script src="~/js/agenda.js" asp-append-version="true"></script>
+}

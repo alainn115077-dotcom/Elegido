@@ -1,0 +1,18 @@
+<div class="modal fade" id="modalWhatsApp" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-whatsapp text-wa"></i> <span id="waTitulo">Mensaje de WhatsApp</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secundario small mb-2">Para: <strong id="waDestino"></strong> · Puedes editar el mensaje antes de enviarlo.</p>
+                <textarea id="waMensaje" class="form-control" rows="7"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                <a id="waAbrir" href="#" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Abrir en WhatsApp</a>
+            </div>
+        </div>
+    </div>
+</div>

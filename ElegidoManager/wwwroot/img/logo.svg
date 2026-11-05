@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F3DFA2"/>
+      <stop offset=".5" stop-color="#C9A54C"/>
+      <stop offset="1" stop-color="#7E6220"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0B0B0C"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" stroke="url(#g)" stroke-opacity=".55" stroke-width="1.5"/>
+  <!-- Sierra -->
+  <path d="M10 44 L22 30 L29 37 L37 25 L54 44" stroke="url(#g)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity=".45"/>
+  <!-- E -->
+  <path d="M23 15 H42 V20 H29 V29 H39 V34 H29 V43 H42 V48 H23 Z" fill="url(#g)"/>
+  <!-- Estrella -->
+  <path d="M47 11 L48.3 14.2 L51.5 15.5 L48.3 16.8 L47 20 L45.7 16.8 L42.5 15.5 L45.7 14.2 Z" fill="#F3DFA2"/>
+</svg>

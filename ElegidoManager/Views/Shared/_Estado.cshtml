@@ -1,0 +1,6 @@
+@model EstadoContratacion
+@* Solo se marca cuando la contratación está cancelada; las demás se consideran confirmadas. *@
+@if (Model == EstadoContratacion.Cancelada)
+{
+    <span class="estado estado-cancelada"><span class="punto"></span>Cancelada</span>
+}

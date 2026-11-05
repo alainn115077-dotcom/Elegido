@@ -1,0 +1,62 @@
+@model List<Usuario>
+@{
+    var integrantes = (ViewBag.Integrantes as List<Integrante>) ?? new();
+    var mx = new CultureInfo("es-MX");
+    var idActual = ViewData["IdActual"] as int? ?? 0;
+    ViewData["Title"] = "Usuarios";
+    ViewData["Subtitulo"] = "Personas con acceso a ELEGIDO MANAGER";
+}
+<div class="barra-herramientas">
+    <span></span>
+    <a asp-action="Crear" class="btn btn-oro"><i class="bi bi-person-plus"></i> Nuevo usuario</a>
+</div>
+<div class="tarjeta p-0 aparecer">
+    <div class="table-responsive">
+        <table class="tabla-em">
+            <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th class="d-none d-md-table-cell">Último acceso</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td><strong>@u.NombreCompleto</strong>@if (u.Id == idActual) { <span class="etiqueta ms-2">Tú</span> }</td>
+                        <td>@u.NombreUsuario</td>
+                        <td>
+                            @u.Rol
+                            @if (Catalogos.LigaIntegrante(u.Rol))
+                            {
+                                <form asp-action="Vincular" asp-route-id="@u.Id" method="post" class="mt-1">
+                                    <select name="integranteId" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()" title="Integrante ligado">
+                                        <option value="">Sin ligar</option>
+                                        @foreach (var i in integrantes)
+                                        {
+                                            <option value="@i.Id" selected="@(u.IntegranteId == i.Id)">@i.NombreCompleto</option>
+                                        }
+                                    </select>
+                                </form>
+                            }
+                        </td>
+                        <td>@if (u.Activo) { <span class="estado estado-confirmada"><span class="punto"></span>Activo</span> } else { <span class="estado estado-cancelada"><span class="punto"></span>Inactivo</span> }</td>
+                        <td class="d-none d-md-table-cell">@(u.UltimoAcceso?.ToString("d MMM yyyy h:mm tt", mx) ?? "Nunca")</td>
+                        <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-icon" data-bs-toggle="collapse" data-bs-target="#pwd-@u.Id" title="Restablecer contraseña"><i class="bi bi-key"></i></button>
+                            @if (u.Id != idActual)
+                            {
+                                <form asp-action="CambiarActivo" asp-route-id="@u.Id" method="post" class="d-inline">
+                                    <button class="btn btn-icon" title="@(u.Activo ? "Desactivar" : "Activar")"><i class="bi @(u.Activo ? "bi-person-dash" : "bi-person-check")"></i></button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="pwd-@u.Id">
+                        <td colspan="6">
+                            <form asp-action="RestablecerContrasena" asp-route-id="@u.Id" method="post" class="d-flex gap-2 flex-wrap">
+                                <input type="password" name="nueva" minlength="8" required class="form-control w-auto" placeholder="Nueva contraseña (mín. 8)" autocomplete="new-password" />
+                                <button class="btn btn-oro btn-sm">Restablecer</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

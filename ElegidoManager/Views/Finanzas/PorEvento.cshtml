@@ -1,0 +1,45 @@
+@model List<EventoTrabajado>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Por evento";
+    ViewData["Subtitulo"] = "Eventos ya trabajados: toca uno para registrar los pagos y ver tu ganancia";
+}
+<div class="barra-herramientas">
+    <partial name="_Pestanas" />
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="tarjeta">@await Html.PartialAsync("_Vacio", new Vacio("bi-music-note", "Todavía no hay eventos trabajados", "Cuando termine una presentación aparecerá aquí para que registres los pagos."))</div>
+}
+else
+{
+    <div class="lista-trabajados">
+        @foreach (var e in Model)
+        {
+            <a class="trabajado aparecer" asp-action="Evento" asp-route-id="@e.ContratacionId">
+                <span class="evento-fecha">
+                    <span class="dia">@e.Inicio.Day</span>
+                    <span class="mes">@e.Inicio.ToString("MMM", mx)</span>
+                    <span class="sem">@e.Inicio.ToString("ddd", mx)</span>
+                </span>
+                <span class="evento-info">
+                    <strong>@e.Cliente</strong>
+                    <span><i class="bi bi-clock"></i> @e.HorarioTexto · @e.Precio.ToString("C0", mx)</span>
+                    <span class="text-secundario"><i class="bi bi-geo-alt"></i> @e.Ubicacion</span>
+                </span>
+                <span class="trabajado-lado">
+                    @if (e.Registrado)
+                    {
+                        <small class="text-secundario">Tu ganancia</small>
+                        <strong class="ganancia">@e.Ganancia.ToString("C0", mx)</strong>
+                    }
+                    else
+                    {
+                        <span class="etiqueta etiqueta-pendiente"><i class="bi bi-pencil"></i> Registrar pagos</span>
+                    }
+                </span>
+            </a>
+        }
+    </div>
+}

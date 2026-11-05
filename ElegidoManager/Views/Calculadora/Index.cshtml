@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Calculadora";
+    ViewData["Subtitulo"] = "Para sacar cuentas rápidas con los clientes";
+}
+<div class="calc-escena">
+    <section class="calculadora aparecer" id="calculadora">
+        <div class="calc-pantalla">
+            <div class="calc-expresion" id="calcExpresion">&nbsp;</div>
+            <div class="calc-resultado" id="calcResultado">0</div>
+        </div>
+
+        <div class="calc-rapidos">
+            <button type="button" class="calc-rapido" data-insertar="+3500">$3,500</button>
+            <button type="button" class="calc-rapido" data-insertar="+7000">$7,000</button>
+            <button type="button" class="calc-rapido resta" data-insertar="-500">− $500 <small>anticipo</small></button>
+        </div>
+
+        <div class="calc-teclado">
+            <button type="button" class="calc-tecla funcion" data-accion="limpiar">C</button>
+            <button type="button" class="calc-tecla funcion" data-accion="borrar" aria-label="Borrar"><i class="bi bi-backspace"></i></button>
+            <button type="button" class="calc-tecla funcion" data-tecla="%">%</button>
+            <button type="button" class="calc-tecla operador" data-tecla="÷">÷</button>
+
+            <button type="button" class="calc-tecla" data-tecla="7">7</button>
+            <button type="button" class="calc-tecla" data-tecla="8">8</button>
+            <button type="button" class="calc-tecla" data-tecla="9">9</button>
+            <button type="button" class="calc-tecla operador" data-tecla="×">×</button>
+
+            <button type="button" class="calc-tecla" data-tecla="4">4</button>
+            <button type="button" class="calc-tecla" data-tecla="5">5</button>
+            <button type="button" class="calc-tecla" data-tecla="6">6</button>
+            <button type="button" class="calc-tecla operador" data-tecla="−">−</button>
+
+            <button type="button" class="calc-tecla" data-tecla="1">1</button>
+            <button type="button" class="calc-tecla" data-tecla="2">2</button>
+            <button type="button" class="calc-tecla" data-tecla="3">3</button>
+            <button type="button" class="calc-tecla operador" data-tecla="+">+</button>
+
+            <button type="button" class="calc-tecla doble" data-tecla="0">0</button>
+            <button type="button" class="calc-tecla" data-tecla=".">.</button>
+            <button type="button" class="calc-tecla igual" data-accion="igual">=</button>
+        </div>
+    </section>
+
+    <details class="calc-historial aparecer">
+        <summary><i class="bi bi-clock-history"></i> Cuentas recientes</summary>
+        <ul id="calcHistorial"></ul>
+        <p id="calcSinHistorial" class="text-secundario small mb-0">Todavía no hay cuentas.</p>
+        <button type="button" class="btn btn-sm btn-ghost mt-2" id="calcLimpiarHistorial"><i class="bi bi-trash"></i> Borrar</button>
+    </details>
+</div>
+
+@section Scripts {
+    <script src="~/js/calculadora.js" asp-append-version="true"></script>
+}

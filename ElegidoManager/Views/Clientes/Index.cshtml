@@ -1,0 +1,53 @@
+@using ElegidoManager.Controllers
+@model List<ClienteFila>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Clientes";
+    ViewData["Subtitulo"] = $"{Model.Count} cliente(s) registrados";
+    var q = ViewBag.Q as string;
+}
+<div class="barra-herramientas">
+    <form method="get" class="buscador">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="@q" class="form-control" placeholder="Buscar por nombre, teléfono o ciudad" />
+    </form>
+    <a asp-action="Crear" class="btn btn-oro"><i class="bi bi-person-plus"></i> Nuevo cliente</a>
+</div>
+
+<div class="tarjeta p-0 aparecer">
+    @if (Model.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-people", "Sin clientes", q != null ? "No hay coincidencias con tu búsqueda." : "Registra tu primer cliente o crea una contratación."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Teléfono</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr class="fila-click" data-href="@Url.Action("Detalle", new { id = c.Id })">
+                            <td class="fw-semibold">@c.NombreCompleto</td>
+                            <td class="text-nowrap">@Formato.Telefono(c.Telefono)</td>
+                            <td class="text-end text-nowrap">
+                                <a href="@WhatsApp.Enlace(c.Telefono)" target="_blank" rel="noopener" class="btn btn-icon btn-wa-sutil" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                                <a asp-action="Editar" asp-route-id="@c.Id" class="btn btn-icon" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="Eliminar" asp-route-id="@c.Id" method="post" class="d-inline"
+                                      data-confirmar="¿Eliminar DEFINITIVAMENTE a @(c.NombreCompleto)?@(c.Contrataciones > 0 ? $" También se borrarán sus {c.Contrataciones} contratación(es) con pagos y documentos." : "")">
+                                    <button class="btn btn-icon btn-borrar" title="Eliminar cliente"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

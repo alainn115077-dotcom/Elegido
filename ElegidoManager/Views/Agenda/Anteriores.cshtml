@@ -1,0 +1,53 @@
+@model List<EventoResumen>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Eventos anteriores";
+    ViewData["Subtitulo"] = $"{Model.Count} presentación(es) en el historial";
+    var anios = ViewData["Anios"] as List<int> ?? new List<int>();
+    var anio = ViewData["Anio"] as int?;
+    var realizados = Model.Where(e => e.Estado != EstadoContratacion.Cancelada).ToList();
+}
+<div class="barra-herramientas">
+    <div class="segmentado">
+        <a asp-action="Anteriores" class="seg-btn @(anio == null ? "activo" : "")">Todos</a>
+        @foreach (var a in anios)
+        {
+            <a asp-action="Anteriores" asp-route-anio="@a" class="seg-btn @(anio == a ? "activo" : "")">@a</a>
+        }
+    </div>
+    <a asp-action="Index" class="btn btn-ghost"><i class="bi bi-calendar3"></i> Volver al calendario</a>
+</div>
+
+<section class="stats stats-3 mb-4">
+    <div class="stat"><span class="stat-etiqueta">Presentaciones realizadas</span><span class="stat-valor">@realizados.Count</span></div>
+    <div class="stat"><span class="stat-etiqueta">Valor total contratado</span><span class="stat-valor">@realizados.Sum(e => e.Precio).ToString("C0", mx)</span></div>
+    <div class="stat stat-alerta"><span class="stat-etiqueta">Saldos sin cobrar</span><span class="stat-valor">@realizados.Where(e => e.Saldo > 0).Sum(e => e.Saldo).ToString("C0", mx)</span></div>
+</section>
+
+<div class="tarjeta p-0 aparecer">
+    @if (Model.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-clock-history", "Sin historial", "Aquí aparecerán las presentaciones que ya se realizaron."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead><tr><th>Fecha</th><th>Cliente</th><th class="d-none d-md-table-cell">Dirección</th><th>Estado</th><th class="text-end">Precio</th><th class="text-end">Saldo</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr class="fila-click" data-href="@Url.Action("Detalle", "Contrataciones", new { id = e.ContratacionId })">
+                            <td class="text-nowrap">@e.Inicio.ToString("ddd d MMM yyyy", mx)</td>
+                            <td>@e.Cliente</td>
+                            <td class="d-none d-md-table-cell">@e.Ubicacion</td>
+                            <td><partial name="_Estado" model="e.Estado" /></td>
+                            <td class="text-end">@e.Precio.ToString("C0", mx)</td>
+                            <td class="text-end @(e.Saldo > 0 && e.Estado != EstadoContratacion.Cancelada ? "text-amarillo" : "text-secundario")">@(e.Estado == EstadoContratacion.Cancelada ? "—" : e.Saldo.ToString("C0", mx))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

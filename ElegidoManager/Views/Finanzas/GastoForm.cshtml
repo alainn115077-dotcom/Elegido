@@ -1,0 +1,63 @@
+@model Gasto
+@{
+    var edicion = Model.Id > 0;
+    ViewData["Title"] = edicion ? "Editar gasto" : "Registrar gasto";
+    var eventos = ViewData["Eventos"] as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    var desdeEvento = !edicion && Model.ContratacionId.HasValue;
+}
+<div class="row justify-content-center">
+    <div class="col-xl-6">
+        <div class="tarjeta aparecer">
+            <form asp-action="@(edicion ? "EditarGasto" : "CrearGasto")" asp-route-id="@(edicion ? Model.Id.ToString() : null)" method="post" class="form-em" novalidate>
+                <input type="hidden" asp-for="Id" />
+                @if (desdeEvento) { <input type="hidden" name="volverAEvento" value="true" /> }
+                <div asp-validation-summary="ModelOnly" class="alerta alerta-error"></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="Concepto" class="form-label"></label>
+                        <input asp-for="Concepto" class="form-control" placeholder="Ej. Gasolina camioneta" autofocus />
+                        <span asp-validation-for="Concepto" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Categoria" class="form-label"></label>
+                        <select asp-for="Categoria" class="form-select">
+                            <option value="">— Selecciona —</option>
+                            @foreach (var c in Catalogos.CategoriasGasto)
+                            {
+                                <option value="@c" selected="@(Model.Categoria == c)">@c</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Categoria" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Monto" class="form-label"></label>
+                        <div class="input-icono"><i class="bi bi-currency-dollar"></i>
+                            <input asp-for="Monto" type="number" step="0.01" min="0.01" class="form-control" value="@(Model.Monto > 0 ? Model.Monto.ToString(CultureInfo.InvariantCulture) : "")" />
+                        </div>
+                        <span asp-validation-for="Monto" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Fecha" class="form-label"></label>
+                        <input asp-for="Fecha" type="date" class="form-control" value="@Model.Fecha.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="Fecha" class="text-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ContratacionId" class="form-label"></label>
+                        <select asp-for="ContratacionId" asp-items="eventos" class="form-select">
+                            <option value="">Gasto general (sin evento)</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Notas" class="form-label"></label>
+                        <textarea asp-for="Notas" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="acciones-form">
+                    <a asp-action="Gastos" class="btn btn-ghost">Cancelar</a>
+                    <button type="submit" class="btn btn-oro"><i class="bi bi-check2"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

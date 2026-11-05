@@ -1,0 +1,9 @@
+@{
+    var accion = ViewContext.RouteData.Values["action"]?.ToString();
+    string A(string a) => accion == a ? "activo" : "";
+}
+<div class="segmentado mb-3">
+    <a asp-controller="Finanzas" asp-action="Index" class="seg-btn @A("Index")"><i class="bi bi-speedometer2"></i> Resumen</a>
+    <a asp-controller="Finanzas" asp-action="PorEvento" class="seg-btn @A("PorEvento")"><i class="bi bi-music-note-list"></i> Por evento</a>
+    <a asp-controller="Finanzas" asp-action="Gastos" class="seg-btn @A("Gastos")"><i class="bi bi-receipt-cutoff"></i> Gastos</a>
+</div>

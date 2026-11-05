@@ -1,0 +1,46 @@
+@model List<DocumentoFila>
+@{
+    var mx = new CultureInfo("es-MX");
+    var tipo = ViewData["Tipo"] as TipoDocumento?;
+    var q = ViewData["Q"] as string;
+    ViewData["Title"] = "Documentos";
+    ViewData["Subtitulo"] = "Contratos de servicios generados";
+}
+<div class="barra-herramientas">
+    <span></span>
+    <form method="get" class="buscador">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="@q" class="form-control" placeholder="Folio o cliente" />
+    </form>
+</div>
+
+<div class="tarjeta p-0 aparecer">
+    @if (Model.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-file-earmark-pdf", "Sin documentos", "Genera el contrato desde el detalle de cada contratación."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead><tr><th>Folio</th><th>Documento</th><th>Cliente</th><th class="d-none d-md-table-cell">Fecha del evento</th><th class="d-none d-lg-table-cell">Generado</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap"><i class="bi bi-filetype-pdf text-oro"></i> <strong>@d.Folio</strong></td>
+                            <td>@d.Tipo.Nombre()</td>
+                            <td><a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@d.ContratacionId">@d.Cliente</a></td>
+                            <td class="d-none d-md-table-cell">@(d.FechaEvento?.ToString("d MMM yyyy", mx))</td>
+                            <td class="d-none d-lg-table-cell">@d.FechaGeneracion.ToString("d MMM yyyy h:mm tt", mx)<br /><small class="text-secundario">@d.GeneradoPor</small></td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Ver" asp-route-id="@d.Id" target="_blank" class="btn btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a asp-action="Descargar" asp-route-id="@d.Id" class="btn btn-icon" title="Descargar"><i class="bi bi-download"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,70 @@
+@model Cliente
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = Model.NombreCompleto;
+    ViewData["Subtitulo"] = "Cliente desde " + Model.FechaRegistro.ToString("MMMM yyyy", mx);
+    var historial = Model.Contrataciones.OrderByDescending(c => c.Evento?.Inicio ?? c.FechaRegistro).ToList();
+    var activas = historial.Where(c => c.Estado != EstadoContratacion.Cancelada).ToList();
+    var totalContratado = activas.Sum(c => c.PrecioAcordado);
+    var totalPagado = activas.Sum(c => c.TotalPagado);
+}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="tarjeta aparecer">
+            <div class="perfil">
+                <span class="avatar avatar-lg">@Model.NombreCompleto.Substring(0, 1).ToUpper()</span>
+                <h2>@Model.NombreCompleto</h2>
+                <p class="text-secundario">@Model.Ciudad</p>
+            </div>
+            <dl class="datos">
+                <dt>Teléfono</dt><dd>@Formato.Telefono(Model.Telefono)</dd>
+                @if (!string.IsNullOrEmpty(Model.Correo)) { <dt>Correo</dt><dd>@Model.Correo</dd> }
+                <dt>Contrataciones</dt><dd>@activas.Count</dd>
+                <dt>Total contratado</dt><dd>@totalContratado.ToString("C", mx)</dd>
+                <dt>Total pagado</dt><dd>@totalPagado.ToString("C", mx)</dd>
+                <dt>Saldo</dt><dd class="@(totalContratado - totalPagado > 0 ? "text-amarillo" : "text-verde")">@((totalContratado - totalPagado).ToString("C", mx))</dd>
+            </dl>
+            @if (!string.IsNullOrEmpty(Model.Notas)) { <p class="nota">@Model.Notas</p> }
+            <div class="d-grid gap-2 mt-3">
+                <a asp-controller="Contrataciones" asp-action="Crear" asp-route-clienteId="@Model.Id" class="btn btn-oro"><i class="bi bi-plus-lg"></i> Nueva contratación</a>
+                <a href="@WhatsApp.Enlace(Model.Telefono)" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Abrir WhatsApp</a>
+                <div class="d-flex gap-2">
+                    <a asp-action="Editar" asp-route-id="@Model.Id" class="btn btn-ghost flex-fill"><i class="bi bi-pencil"></i> Editar</a>
+                    <form asp-action="Eliminar" asp-route-id="@Model.Id" method="post" class="flex-fill"
+                          data-confirmar="¿Eliminar DEFINITIVAMENTE a @(Model.NombreCompleto)?@(historial.Count > 0 ? $" También se borrarán sus {historial.Count} contratación(es) con pagos y documentos." : "")">
+                        <button class="btn btn-ghost-peligro w-100"><i class="bi bi-trash"></i> Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-clock-history"></i> Historial de contrataciones</h2></div>
+            @if (historial.Count == 0)
+            {
+                @await Html.PartialAsync("_Vacio", new Vacio("bi-journal", "Sin contrataciones", "Este cliente aún no ha contratado al grupo."))
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="tabla-em">
+                        <thead><tr><th>Fecha</th><th>Dirección</th><th>Estado</th><th class="text-end">Precio</th><th class="text-end">Saldo</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in historial)
+                            {
+                                <tr class="fila-click" data-href="@Url.Action("Detalle", "Contrataciones", new { id = c.Id })">
+                                    <td>@(c.Evento == null ? "—" : c.Evento.HorarioPendiente ? c.Evento.Inicio.ToString("d MMM yyyy", mx) + " · horario pendiente" : c.Evento.Inicio.ToString("d MMM yyyy · h:mm tt", mx))</td>
+                                    <td>@c.Evento?.Ubicacion</td>
+                                    <td><partial name="_Estado" model="c.Estado" /></td>
+                                    <td class="text-end">@c.PrecioAcordado.ToString("C0", mx)</td>
+                                    <td class="text-end">@(c.Estado == EstadoContratacion.Cancelada ? "—" : c.Saldo.ToString("C0", mx))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

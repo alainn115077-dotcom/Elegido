@@ -1,0 +1,233 @@
+@model ContratacionDetalleViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    var c = Model.Contratacion;
+    var ev = c.Evento;
+    ViewData["Title"] = c.Cliente.NombreCompleto;
+    ViewData["Subtitulo"] = ev != null ? ev.Inicio.ToString("dddd d 'de' MMMM 'de' yyyy", mx) : "";
+    var pct = c.PrecioAcordado > 0 ? (int)Math.Min(100, Math.Round(c.TotalPagado / c.PrecioAcordado * 100)) : 0;
+    var cancelada = c.Estado == EstadoContratacion.Cancelada;
+    var liquidada = c.Saldo <= 0 && !cancelada;
+    var pasado = ev != null && ev.Fin < DateTime.Now;
+}
+
+@if (TempData["AbrirDocumento"] is int docId)
+{
+    <div class="alerta alerta-exito mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span><i class="bi bi-file-earmark-check"></i> El documento PDF está listo.</span>
+        <span class="d-flex gap-2">
+            <a asp-controller="Documentos" asp-action="Ver" asp-route-id="@docId" target="_blank" class="btn btn-sm btn-oro"><i class="bi bi-eye"></i> Ver PDF</a>
+            <a asp-controller="Documentos" asp-action="Descargar" asp-route-id="@docId" class="btn btn-sm btn-ghost"><i class="bi bi-download"></i> Descargar</a>
+        </span>
+    </div>
+}
+@if (Model.Conflictos.Count > 0)
+{
+    <div class="alerta alerta-error mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Atención: este horario se empalma con
+        @string.Join(", ", Model.Conflictos.Select(x => $"{x.Contratacion.Cliente.NombreCompleto} ({x.Inicio.ToString("d MMM h:mm tt", mx)})")).
+    </div>
+}
+
+<div class="encabezado-detalle tarjeta aparecer">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <partial name="_Estado" model="c.Estado" />
+        @if (pasado && !cancelada) { <span class="etiqueta">Evento realizado</span> }
+        @if (liquidada) { <span class="etiqueta etiqueta-verde"><i class="bi bi-check2-all"></i> Liquidado</span> }
+        <span class="text-secundario small">Registrada el @c.FechaRegistro.ToString("d MMM yyyy", mx)</span>
+    </div>
+    <div class="acciones-detalle">
+        @if (cancelada)
+        {
+            <form asp-action="CambiarEstado" method="post" class="d-inline">
+                <input type="hidden" name="id" value="@c.Id" /><input type="hidden" name="estado" value="Confirmada" />
+                <button class="btn btn-ghost"><i class="bi bi-arrow-counterclockwise"></i> Reactivar</button>
+            </form>
+        }
+        <a asp-action="Editar" asp-route-id="@c.Id" class="btn btn-ghost"><i class="bi bi-pencil"></i> Editar</a>
+        @if (!cancelada)
+        {
+            <button class="btn btn-ghost-peligro" data-bs-toggle="modal" data-bs-target="#modalCancelar"><i class="bi bi-x-circle"></i> Cancelar</button>
+        }
+        <form asp-action="Eliminar" asp-route-id="@c.Id" method="post" class="d-inline"
+              data-confirmar="¿Borrar DEFINITIVAMENTE esta contratación? Se eliminarán también sus @c.Pagos.Count pago(s) y @Model.Documentos.Count documento(s). Esto no se puede deshacer.">
+            <button class="btn btn-ghost-peligro"><i class="bi bi-trash"></i> Borrar definitivamente</button>
+        </form>
+    </div>
+</div>
+
+@if (cancelada && !string.IsNullOrEmpty(c.MotivoCancelacion))
+{
+    <div class="alerta mb-4"><strong>Motivo de cancelación:</strong> @c.MotivoCancelacion</div>
+}
+
+<div class="row g-4 mt-0">
+    <div class="col-xl-8 d-flex flex-column gap-4">
+        <!-- Datos del evento -->
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-info-circle"></i> Datos de la contratación</h2></div>
+            <div class="grid-datos">
+                <div><span>Cliente</span><a asp-controller="Clientes" asp-action="Detalle" asp-route-id="@c.ClienteId">@c.Cliente.NombreCompleto</a></div>
+                <div><span>Teléfono</span><strong>@Formato.Telefono(c.Cliente.Telefono)</strong></div>
+                @if (ev != null)
+                {
+                    <div><span>Fecha</span><strong>@ev.Inicio.ToString("dddd d 'de' MMMM yyyy", mx)</strong></div>
+                    <div><span>Horario</span><strong class="@(ev.HorarioPendiente ? "texto-pendiente" : "")">@ev.HorarioTexto@(!ev.HorarioPendiente && ev.Fin.Date > ev.Inicio.Date ? " (día siguiente)" : "")</strong></div>
+                    @if (!ev.HorarioPendiente)
+                    {
+                        <div><span>Duración</span><strong>@($"{(int)ev.Duracion.TotalHours} h {ev.Duracion.Minutes:00} min")</strong></div>
+                    }
+                    <div class="ancho"><span>Dirección</span>
+                        <strong class="@(ev.LugarPendiente ? "texto-pendiente" : "")">@ev.Ubicacion</strong>
+                        @if (!ev.LugarPendiente)
+                        {
+                            <a class="enlace-oro small" target="_blank" rel="noopener" href="@Mapas.Url(ev.Ubicacion)"><i class="bi bi-map"></i> Ver en mapa</a>
+                        }
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(c.Observaciones))
+                {
+                    <div class="ancho"><span>Observaciones</span><p class="mb-0">@c.Observaciones</p></div>
+                }
+            </div>
+        </section>
+
+        <!-- Pagos -->
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera">
+                <h2><i class="bi bi-cash-stack"></i> Pagos</h2>
+                @if (!cancelada && c.Saldo > 0)
+                {
+                    <a asp-controller="Pagos" asp-action="Crear" asp-route-contratacionId="@c.Id" class="btn btn-oro btn-sm"><i class="bi bi-plus-lg"></i> Registrar pago</a>
+                }
+            </div>
+            <div class="resumen-pago horizontal">
+                <div><span>Precio acordado</span><strong>@c.PrecioAcordado.ToString("C", mx)</strong></div>
+                <div><span>Pagado</span><strong class="text-verde">@c.TotalPagado.ToString("C", mx)</strong></div>
+                <div class="total"><span>Saldo pendiente</span><strong class="@(c.Saldo > 0 ? "text-amarillo" : "text-verde")">@c.Saldo.ToString("C", mx)</strong></div>
+            </div>
+
+            @if (c.Pagos.Count == 0)
+            {
+                <p class="text-secundario mb-0">Aún no hay pagos registrados.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="tabla-em">
+                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Método</th><th class="text-end">Monto</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var p in c.Pagos.OrderBy(p => p.Fecha))
+                            {
+                                <tr>
+                                    <td>@p.Fecha.ToString("d MMM yyyy", mx)</td>
+                                    <td>@p.Tipo.Nombre()</td>
+                                    <td>@p.Metodo.Nombre()@(string.IsNullOrEmpty(p.Referencia) ? "" : " · " + p.Referencia)</td>
+                                    <td class="text-end fw-semibold">@p.Monto.ToString("C", mx)</td>
+                                    <td class="text-end text-nowrap">
+                                        <form asp-controller="Pagos" asp-action="Eliminar" asp-route-id="@p.Id" method="post" class="d-inline" data-confirmar="¿Eliminar este pago? El saldo se recalculará.">
+                                            <button class="btn btn-icon" title="Eliminar pago"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        @if (User.IsInRole(Catalogos.RolAdministrador))
+        {
+        <!-- Gastos asociados -->
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera">
+                <h2><i class="bi bi-receipt-cutoff"></i> Gastos del evento</h2>
+                <a asp-controller="Finanzas" asp-action="CrearGasto" asp-route-contratacionId="@c.Id" class="btn btn-ghost btn-sm"><i class="bi bi-plus-lg"></i> Registrar gasto</a>
+            </div>
+            @if (c.Gastos.Count == 0)
+            {
+                <p class="text-secundario mb-0">Sin gastos registrados para este evento.</p>
+            }
+            else
+            {
+                var totalGastos = c.Gastos.Sum(g => g.Monto);
+                <ul class="lista-simple">
+                    @foreach (var g in c.Gastos.OrderBy(g => g.Fecha))
+                    {
+                        <li><span>@g.Concepto <small class="text-secundario">· @g.Categoria</small></span><strong>@g.Monto.ToString("C", mx)</strong></li>
+                    }
+                    <li class="total"><span>Total gastos · Utilidad (cobrado − gastos)</span><strong>@totalGastos.ToString("C", mx) · @((c.TotalPagado - totalGastos).ToString("C", mx))</strong></li>
+                </ul>
+            }
+        </section>
+        }
+    </div>
+
+    <div class="col-xl-4 d-flex flex-column gap-4">
+        <!-- WhatsApp -->
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-whatsapp text-wa"></i> WhatsApp</h2></div>
+            <div class="d-grid gap-2">
+                @foreach (var pl in Model.Plantillas)
+                {
+                    <button type="button" class="btn btn-plantilla" data-wa-telefono="@WhatsApp.NormalizarTelefono(c.Cliente.Telefono)"
+                            data-wa-destino="@c.Cliente.NombreCompleto" data-wa-titulo="@pl.Nombre" data-wa-mensaje="@pl.Mensaje">
+                        <i class="bi @pl.Icono"></i> @pl.Nombre
+                    </button>
+                }
+            </div>
+        </section>
+
+        <!-- Documentos -->
+        <section class="tarjeta aparecer">
+            <div class="tarjeta-cabecera"><h2><i class="bi bi-file-earmark-pdf"></i> Documentos</h2></div>
+            <div class="d-grid gap-2 mb-3">
+                <form asp-controller="Documentos" asp-action="Generar" method="post">
+                    <input type="hidden" name="contratacionId" value="@c.Id" />
+                    <input type="hidden" name="tipo" value="Contrato" />
+                    <button class="btn btn-ghost w-100" disabled="@cancelada"><i class="bi bi-file-earmark-text"></i> Generar contrato de servicios</button>
+                </form>
+            </div>
+            @if (Model.Documentos.Count > 0)
+            {
+                <ul class="lista-docs">
+                    @foreach (var d in Model.Documentos)
+                    {
+                        <li>
+                            <i class="bi bi-filetype-pdf"></i>
+                            <span><strong>@d.Folio</strong><small>@d.Tipo.Nombre()@(d.MontoPago.HasValue ? " · " + d.MontoPago.Value.ToString("C0", mx) : "") · @d.FechaGeneracion.ToString("d MMM yyyy", mx)</small></span>
+                            <a asp-controller="Documentos" asp-action="Ver" asp-route-id="@d.Id" target="_blank" class="btn btn-icon" title="Ver"><i class="bi bi-eye"></i></a>
+                            <a asp-controller="Documentos" asp-action="Descargar" asp-route-id="@d.Id" class="btn btn-icon" title="Descargar"><i class="bi bi-download"></i></a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+    </div>
+</div>
+
+<!-- Modal cancelar -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="CambiarEstado" method="post" class="modal-content">
+            <input type="hidden" name="id" value="@c.Id" />
+            <input type="hidden" name="estado" value="Cancelada" />
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar contratación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>La fecha quedará libre en la agenda. Los pagos registrados se conservan en el historial.</p>
+                <label class="form-label" for="motivo">Motivo (opcional)</label>
+                <textarea id="motivo" name="motivo" class="form-control" rows="3" maxlength="300"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Volver</button>
+                <button type="submit" class="btn btn-peligro">Cancelar contratación</button>
+            </div>
+        </form>
+    </div>
+</div>

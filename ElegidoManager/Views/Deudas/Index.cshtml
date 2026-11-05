@@ -1,0 +1,67 @@
+@using ElegidoManager.Controllers
+@model MisDeudasViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Deudas";
+    var admin = Model.NombreAdmin;
+}
+
+@if (Model.Integrante == null)
+{
+    @await Html.PartialAsync("_Vacio", new Vacio("bi-person-x", "Tu cuenta aún no está ligada", $"Pídele a {admin} que ligue tu cuenta con tu nombre de integrante en Usuarios."))
+}
+else
+{
+    <div class="stats stats-2 aparecer mb-4">
+        <div class="stat">
+            <span class="stat-etiqueta">Le debes a @admin</span>
+            <strong class="stat-valor text-rojo">@Model.TotalYoDebo.ToString("C0", mx)</strong>
+        </div>
+        <div class="stat">
+            <span class="stat-etiqueta">@admin te debe</span>
+            <strong class="stat-valor text-verde">@Model.TotalMeDeben.ToString("C0", mx)</strong>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        @foreach (var yoDebo in new[] { true, false })
+        {
+            var lista = yoDebo ? Model.YoDebo : Model.MeDeben;
+            var total = yoDebo ? Model.TotalYoDebo : Model.TotalMeDeben;
+            <div class="col-lg-6">
+                <section class="tarjeta aparecer h-100 cuenta @(yoDebo ? "cuenta-le-debo" : "cuenta-me-debe")">
+                    <div class="tarjeta-cabecera">
+                        <h2><i class="bi @(yoDebo ? "bi-arrow-up-right-circle" : "bi-arrow-down-left-circle")"></i> @(yoDebo ? $"Debo a {admin}" : $"{admin} me debe")</h2>
+                        <strong class="cuenta-total">@total.ToString("C0", mx)</strong>
+                    </div>
+                    @if (lista.Count == 0)
+                    {
+                        <p class="text-secundario mb-0">@(yoDebo ? "No le debes nada." : "No te debe nada.")</p>
+                    }
+                    else
+                    {
+                        <ul class="lista-deudas">
+                            @foreach (var m in lista)
+                            {
+                                <li class="@(m.Liquidado ? "pagada" : "")">
+                                    <div class="deuda-info">
+                                        <strong>@m.Monto.ToString("C0", mx)</strong>
+                                        <small>@(string.IsNullOrEmpty(m.Concepto) ? "" : m.Concepto + " · ")@m.Fecha.ToString("d MMM yyyy", mx)@(m.Liquidado && m.FechaLiquidado.HasValue ? " · pagado el " + m.FechaLiquidado.Value.ToString("d MMM", mx) : "")</small>
+                                    </div>
+                                    @if (m.Liquidado)
+                                    {
+                                        <span class="estado estado-confirmada"><span class="punto"></span>Pagado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="estado estado-pendiente"><span class="punto"></span>Pendiente</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+        }
+    </div>
+}

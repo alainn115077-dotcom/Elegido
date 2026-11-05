@@ -1,0 +1,64 @@
+@model List<Gasto>
+@{
+    var mx = new CultureInfo("es-MX");
+    var mes = ViewData["Mes"] as DateTime?;
+    var categoria = ViewData["Categoria"] as string;
+    ViewData["Title"] = "Gastos";
+    ViewData["Subtitulo"] = $"{Model.Count} registro(s) · {Model.Sum(g => g.Monto).ToString("C", mx)}";
+}
+<div class="barra-herramientas">
+    <partial name="_Pestanas" />
+    <div class="d-flex gap-2 flex-wrap">
+        <form method="get" class="d-flex gap-2">
+            <input type="month" name="mes" value="@(mes?.ToString("yyyy-MM"))" class="form-control" />
+            <select name="categoria" class="form-select">
+                <option value="">Todas las categorías</option>
+                @foreach (var c in Catalogos.CategoriasGasto)
+                {
+                    <option value="@c" selected="@(categoria == c)">@c</option>
+                }
+            </select>
+            <button class="btn btn-ghost"><i class="bi bi-funnel"></i></button>
+        </form>
+        <a asp-action="CrearGasto" class="btn btn-oro"><i class="bi bi-plus-lg"></i> Nuevo gasto</a>
+    </div>
+</div>
+
+<div class="tarjeta p-0 aparecer">
+    @if (Model.Count == 0)
+    {
+        @await Html.PartialAsync("_Vacio", new Vacio("bi-receipt", "Sin gastos", "Registra combustible, comida, pagos a integrantes y demás gastos."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="tabla-em">
+                <thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th class="d-none d-md-table-cell">Evento</th><th class="text-end">Monto</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@g.Fecha.ToString("d MMM yyyy", mx)</td>
+                            <td>@g.Concepto</td>
+                            <td><span class="etiqueta">@g.Categoria</span></td>
+                            <td class="d-none d-md-table-cell">
+                                @if (g.Contratacion != null)
+                                {
+                                    <a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@g.ContratacionId">@g.Contratacion.Cliente.NombreCompleto</a>
+                                }
+                                else { <span class="text-secundario">General</span> }
+                            </td>
+                            <td class="text-end fw-semibold text-rojo">@g.Monto.ToString("C", mx)</td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="EditarGasto" asp-route-id="@g.Id" class="btn btn-icon" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="EliminarGasto" asp-route-id="@g.Id" method="post" class="d-inline" data-confirmar="¿Eliminar este gasto?">
+                                    <button class="btn btn-icon" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

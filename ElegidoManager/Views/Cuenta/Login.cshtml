@@ -1,0 +1,34 @@
+@model LoginViewModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = "Iniciar sesión";
+}
+<h2 class="auth-titulo">Bienvenido</h2>
+<p class="auth-texto">Inicia sesión para administrar el grupo.</p>
+
+<form asp-action="Login" method="post" class="form-em" novalidate>
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div asp-validation-summary="ModelOnly" class="alerta alerta-error"></div>
+
+    <div class="mb-3">
+        <label asp-for="Usuario" class="form-label"></label>
+        <div class="input-icono">
+            <i class="bi bi-person"></i>
+            <input asp-for="Usuario" class="form-control" autocomplete="username" autofocus />
+        </div>
+        <span asp-validation-for="Usuario" class="text-error"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Contrasena" class="form-label"></label>
+        <div class="input-icono">
+            <i class="bi bi-lock"></i>
+            <input asp-for="Contrasena" class="form-control" autocomplete="current-password" />
+        </div>
+        <span asp-validation-for="Contrasena" class="text-error"></span>
+    </div>
+    <div class="form-check mb-4">
+        <input asp-for="Recordarme" class="form-check-input" />
+        <label asp-for="Recordarme" class="form-check-label"></label>
+    </div>
+    <button type="submit" class="btn btn-oro w-100 btn-lg">Entrar <i class="bi bi-arrow-right"></i></button>
+</form>

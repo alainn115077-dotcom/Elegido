@@ -1,0 +1,50 @@
+@using ElegidoManager.Controllers
+@model List<IntegranteResumen>
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Integrantes";
+    var totalMeDeben = Model.Sum(i => i.MeDebe);
+    var totalLesDebo = Model.Sum(i => i.LeDebo);
+}
+
+<section class="stats stats-2 mb-4">
+    <div class="stat aparecer">
+        <span class="stat-icono amarillo"><i class="bi bi-arrow-down-left-circle"></i></span>
+        <span class="stat-etiqueta">Me deben en total</span>
+        <span class="stat-valor text-amarillo">@totalMeDeben.ToString("C0", mx)</span>
+    </div>
+    <div class="stat aparecer">
+        <span class="stat-icono rojo"><i class="bi bi-arrow-up-right-circle"></i></span>
+        <span class="stat-etiqueta">Les debo en total</span>
+        <span class="stat-valor text-rojo">@totalLesDebo.ToString("C0", mx)</span>
+    </div>
+</section>
+
+<div class="grid-integrantes">
+    @foreach (var i in Model)
+    {
+        <a class="tarjeta-integrante aparecer" asp-action="Detalle" asp-route-id="@i.Id">
+            <span class="avatar avatar-lg">@i.Nombre.Substring(0, 1).ToUpper()</span>
+            <h3>@i.Nombre</h3>
+            <div class="deudas">
+                <div>
+                    <span>Me debe</span>
+                    <strong class="@(i.MeDebe > 0 ? "text-amarillo" : "text-secundario")">@i.MeDebe.ToString("C0", mx)</strong>
+                </div>
+                <div>
+                    <span>Le debo</span>
+                    <strong class="@(i.LeDebo > 0 ? "text-rojo" : "text-secundario")">@i.LeDebo.ToString("C0", mx)</strong>
+                </div>
+            </div>
+            <span class="enlace-oro small">Anotar o ver detalle <i class="bi bi-arrow-right"></i></span>
+        </a>
+    }
+</div>
+
+<details class="tarjeta mt-4 agregar-integrante">
+    <summary><i class="bi bi-person-plus"></i> Agregar integrante</summary>
+    <form asp-action="Agregar" method="post" class="d-flex gap-2 mt-3 flex-wrap">
+        <input type="text" name="nombre" class="form-control" style="max-width:320px" placeholder="Nombre" maxlength="120" required />
+        <button class="btn btn-oro"><i class="bi bi-plus-lg"></i> Agregar</button>
+    </form>
+</details>

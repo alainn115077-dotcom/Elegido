@@ -1,0 +1,92 @@
+@model PagoFormViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Registrar pago";
+    ViewData["Subtitulo"] = Model.Cliente;
+}
+<div class="row justify-content-center">
+    <div class="col-xl-8">
+        <div class="row g-4">
+            <div class="col-md-5">
+                <div class="tarjeta aparecer h-100">
+                    <div class="tarjeta-cabecera"><h2><i class="bi bi-receipt"></i> Estado de cuenta</h2></div>
+                    <dl class="datos">
+                        <dt>Cliente</dt><dd>@Model.Cliente</dd>
+                                                <dt>Fecha</dt><dd>@(Model.FechaEvento?.ToString("d 'de' MMMM yyyy", mx) ?? "—")</dd>
+                    </dl>
+                    <div class="resumen-pago">
+                        <div><span>Precio</span><strong>@Model.Precio.ToString("C", mx)</strong></div>
+                        <div><span>Pagado</span><strong class="text-verde">@Model.Pagado.ToString("C", mx)</strong></div>
+                        <div class="total"><span>Saldo</span><strong class="text-amarillo" id="saldoActual" data-saldo="@Model.Saldo.ToString(CultureInfo.InvariantCulture)">@Model.Saldo.ToString("C", mx)</strong></div>
+                    </div>
+                    <p class="text-secundario small mt-3 mb-0">
+                        El tipo de pago se asigna automáticamente: <strong>Anticipo</strong> si es el primero,
+                        <strong>Abono</strong> si es parcial y <strong>Liquidación</strong> si cubre el saldo.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="tarjeta aparecer">
+                    <form asp-action="Crear" method="post" class="form-em" novalidate>
+                        <input type="hidden" asp-for="ContratacionId" />
+                        <div asp-validation-summary="ModelOnly" class="alerta alerta-error"></div>
+                        <div class="mb-3">
+                            <label asp-for="Monto" class="form-label"></label>
+                            <div class="input-icono"><i class="bi bi-currency-dollar"></i>
+                                <input asp-for="Monto" type="number" step="0.01" min="0.01" class="form-control form-control-lg" id="Monto" value="@(Model.Monto?.ToString(CultureInfo.InvariantCulture))" />
+                            </div>
+                            <span asp-validation-for="Monto" class="text-error"></span>
+                            <div class="text-secundario small mt-1">Saldo después del pago: <strong id="saldoDespues">—</strong></div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label asp-for="Fecha" class="form-label"></label>
+                                <input asp-for="Fecha" type="date" class="form-control" value="@(Model.Fecha?.ToString("yyyy-MM-dd"))" />
+                                <span asp-validation-for="Fecha" class="text-error"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="Metodo" class="form-label"></label>
+                                <select asp-for="Metodo" class="form-select">
+                                    @foreach (var m in Enum.GetValues<MetodoPago>())
+                                    {
+                                        <option value="@m" selected="@(Model.Metodo == m)">@m.Nombre()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Referencia" class="form-label"></label>
+                            <input asp-for="Referencia" class="form-control" placeholder="No. de transferencia, folio, etc." />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Notas" class="form-label"></label>
+                            <textarea asp-for="Notas" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="acciones-form">
+                            <a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@Model.ContratacionId" class="btn btn-ghost">Cancelar</a>
+                            <button type="submit" class="btn btn-oro"><i class="bi bi-check2"></i> Registrar pago</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const saldo = parseFloat(document.getElementById('saldoActual').dataset.saldo) || 0;
+            const monto = document.getElementById('Monto');
+            const out = document.getElementById('saldoDespues');
+            const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+            function calc() {
+                const m = parseFloat(monto.value) || 0;
+                const r = saldo - m;
+                out.textContent = r < 0 ? 'excede el saldo' : fmt.format(r);
+                out.className = r < 0 ? 'text-rojo' : (r === 0 ? 'text-verde' : '');
+            }
+            monto.addEventListener('input', calc); calc();
+        })();
+    </script>
+}

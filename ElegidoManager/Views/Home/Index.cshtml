@@ -1,0 +1,139 @@
+@model DashboardViewModel
+@{
+    var mx = new CultureInfo("es-MX");
+    ViewData["Title"] = "Inicio";
+    var hoy = DateTime.Today;
+    var ahora = DateTime.Now;
+    var proxima = Model.Proximos.FirstOrDefault();
+    var resto = Model.Proximos.Skip(1).ToList();
+    var cuando = "";
+    if (proxima != null)
+    {
+        var dias = (proxima.Inicio.Date - hoy).Days;
+        if (proxima.Inicio <= ahora) cuando = "¡En curso!";
+        else if (dias == 0) cuando = "¡Es hoy!";
+        else if (dias == 1) cuando = "Es mañana";
+        else cuando = "Faltan " + dias + " días";
+    }
+    var soloVer = User.IsInRole(Catalogos.RolIntegrante);
+    string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
+    ViewData["Subtitulo"] = Model.Proximos.Count == 0
+        ? "No hay presentaciones próximas"
+        : $"{Model.Proximos.Count} presentación(es) próximas";
+}
+
+@if (proxima == null)
+{
+    <div class="bienvenida aparecer">
+        <div>
+            <h2>@(Model.SinDatos ? "Comencemos a llenar la agenda" : "La agenda está libre")</h2>
+            <p>@(Model.SinDatos ? "Todavía no hay contrataciones registradas. Registra la primera y aquí verás tus próximas presentaciones." : "No hay presentaciones próximas registradas.")</p>
+        </div>
+        @if (!soloVer)
+        {
+            <a asp-controller="Contrataciones" asp-action="Crear" class="btn btn-oro"><i class="bi bi-plus-lg"></i> Registrar contratación</a>
+        }
+    </div>
+}
+else
+{
+    <section class="proxima aparecer">
+        <span class="proxima-etiqueta"><i class="bi bi-stars"></i> Próxima presentación</span>
+        <div class="proxima-cuerpo">
+            <div class="proxima-fecha">
+                <span class="sem">@proxima.Inicio.ToString("dddd", mx)</span>
+                <span class="dia">@proxima.Inicio.Day</span>
+                <span class="mes">@proxima.Inicio.ToString("MMMM", mx)</span>
+            </div>
+            <div class="proxima-info">
+                <span class="proxima-cuando">@cuando</span>
+                <h2>@proxima.Cliente</h2>
+                <div class="proxima-datos">
+                    <span class="@(proxima.HorarioPendiente ? "texto-pendiente" : "")"><i class="bi bi-clock"></i> @proxima.HorarioTexto</span>
+                    <span class="@(proxima.LugarPendiente ? "texto-pendiente" : "")"><i class="bi bi-geo-alt"></i> @proxima.Ubicacion</span>
+                </div>
+                @if (!soloVer)
+                {
+                <div class="proxima-datos">
+                    <partial name="_Estado" model="proxima.Estado" />
+                    @if (proxima.Saldo > 0)
+                    {
+                        <span class="text-amarillo fw-semibold">Saldo pendiente @proxima.Saldo.ToString("C0", mx)</span>
+                    }
+                    else
+                    {
+                        <span class="text-verde fw-semibold"><i class="bi bi-check2-all"></i> Liquidado</span>
+                    }
+                </div>
+                }
+            </div>
+            <div class="proxima-acciones">
+                @if (!soloVer)
+                {
+                    <a asp-controller="Contrataciones" asp-action="Detalle" asp-route-id="@proxima.ContratacionId" class="btn btn-oro"><i class="bi bi-eye"></i> Ver detalle</a>
+                    <a asp-controller="Contrataciones" asp-action="Editar" asp-route-id="@proxima.ContratacionId" class="btn btn-ghost"><i class="bi bi-pencil"></i> Editar</a>
+                    <a href="@WhatsApp.Enlace(proxima.Telefono)" target="_blank" rel="noopener" class="btn btn-ghost"><i class="bi bi-whatsapp text-wa"></i> WhatsApp</a>
+                }
+                @if (!proxima.LugarPendiente)
+                {
+                    <a href="@Mapas.Url(proxima.Ubicacion)" target="_blank" rel="noopener" class="btn btn-ghost"><i class="bi bi-map"></i> Mapa</a>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="tarjeta aparecer mt-4">
+        <div class="tarjeta-cabecera">
+            <h2><i class="bi bi-calendar2-week"></i> Próximos eventos</h2>
+            <a asp-controller="Agenda" asp-action="Index" class="enlace-oro">Ver calendario <i class="bi bi-arrow-right"></i></a>
+        </div>
+        @if (resto.Count == 0)
+        {
+            <p class="text-secundario mb-0">No hay más presentaciones registradas después de la próxima.</p>
+        }
+        else
+        {
+            foreach (var grupoMes in resto.GroupBy(e => new DateTime(e.Inicio.Year, e.Inicio.Month, 1)))
+            {
+                <h3 class="mes-titulo">@Cap(grupoMes.Key.ToString(grupoMes.Key.Year == hoy.Year ? "MMMM" : "MMMM yyyy", mx))</h3>
+                <div class="lista-eventos">
+                    @foreach (var e in grupoMes)
+                    {
+                        <div class="evento-fila-con-editar">
+                        <a class="evento-fila" href="@(soloVer ? Url.Action("Index", "Agenda") : Url.Action("Detalle", "Contrataciones", new { id = e.ContratacionId }))">
+                            <span class="evento-fecha">
+                                <span class="dia">@e.Inicio.Day</span>
+                                <span class="mes">@e.Inicio.ToString("MMM", mx)</span>
+                                <span class="sem">@e.Inicio.ToString("ddd", mx)</span>
+                            </span>
+                            <span class="evento-info">
+                                <strong>@e.Cliente</strong>
+                                <span class="@(e.HorarioPendiente ? "texto-pendiente" : "")"><i class="bi bi-clock"></i> @e.HorarioTexto</span>
+                                <span class="@(e.LugarPendiente ? "texto-pendiente" : "text-secundario")"><i class="bi bi-geo-alt"></i> @e.Ubicacion</span>
+                            </span>
+                            @if (!soloVer)
+                            {
+                            <span class="evento-estado">
+                                <partial name="_Estado" model="e.Estado" />
+                                @if (e.Saldo > 0)
+                                {
+                                    <small class="text-secundario">Saldo @e.Saldo.ToString("C0", mx)</small>
+                                }
+                                else
+                                {
+                                    <small class="text-verde">Liquidado</small>
+                                }
+                            </span>
+                            }
+                        </a>
+                        @if (!soloVer)
+                        {
+                            <a asp-controller="Contrataciones" asp-action="Editar" asp-route-id="@e.ContratacionId" class="btn btn-icon btn-editar" title="Editar evento"><i class="bi bi-pencil"></i></a>
+                        }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </section>
+}

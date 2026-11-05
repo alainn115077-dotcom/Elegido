@@ -18,6 +18,19 @@ jobs:
         run: dotnet build ElegidoManager/ElegidoManager.csproj -c Release
       - name: Probar imagen Docker (igual que Vercel)
         run: docker build -t elegido-manager .
+      - name: Arrancar con MongoDB de prueba
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7
+          sleep 5
+          docker run -d --name app --network host -e PORT=8080 \
+            -e ConnectionStrings__MongoDB="mongodb://127.0.0.1:27017" -e MongoDB__BaseDatos=prueba elegido-manager
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8080/Cuenta/Login && break; sleep 2; done
+          docker logs app | tail -20
+      - name: Recorrer la app (crear admin, entrar y abrir cada sección)
+        run: bash .github/prueba.sh http://127.0.0.1:8080
+      - name: Bitácora del servidor si algo falló
+        if: failure()
+        run: docker logs app | tail -120
 
   escritorio:
     name: App de escritorio (.exe)

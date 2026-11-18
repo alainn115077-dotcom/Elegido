@@ -1276,12 +1276,14 @@ a, button, .btn, .chip, .seg-btn, .nav-item-em, .fila-click { touch-action: mani
 }
 
 /* Barra de carga instantánea al tocar un enlace */
+/* La barra avanza con transform (la mueve la tarjeta gráfica): no se detiene aunque el celular esté ocupado cargando */
 #barraCarga {
-    position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 3000; pointer-events: none;
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 3000; pointer-events: none;
     background: var(--em-gold-grad); box-shadow: 0 0 10px rgba(201, 165, 76, .7);
-    transition: width .25s ease, opacity .2s ease; opacity: 0;
+    transform-origin: 0 50%; transform: scaleX(0); opacity: 0;
+    transition: transform .25s ease, opacity .2s ease;
 }
-#barraCarga.activa { opacity: 1; width: 70%; transition: width 6s cubic-bezier(.1, .7, .1, 1), opacity .1s; }
+#barraCarga.activa { opacity: 1; transform: scaleX(.7); transition: transform 6s cubic-bezier(.1, .7, .1, 1), opacity .1s; }
 @supports (padding: env(safe-area-inset-top)) { #barraCarga { top: env(safe-area-inset-top); } }
 
 /* =====================================================================

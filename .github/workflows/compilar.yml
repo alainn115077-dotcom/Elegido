@@ -9,6 +9,7 @@ jobs:
   web:
     name: App web (la que usa Vercel)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,15 +29,21 @@ jobs:
           docker logs app | tail -20
       - name: Recorrer la app (crear admin, entrar y abrir cada sección)
         run: bash .github/prueba.sh http://127.0.0.1:8080
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - name: Probar en navegadores reales (iPhone con WebKit y Android con Chromium)
+        # Imagen oficial de Playwright: trae Safari (WebKit) y Chrome (Chromium) listos, sin depender del Ubuntu del servidor
         run: |
-          npm init -y > /dev/null
-          npm install --no-audit --no-fund --silent playwright@1.49.1
-          npx playwright install --with-deps webkit chromium > /dev/null
-          node .github/ui-test.mjs http://localhost:8080
+          mkdir -p capturas
+          docker run --rm --network host --ipc=host \
+            -v "$PWD/.github/ui-test.mjs:/prueba/ui-test.mjs:ro" -v "$PWD/capturas:/prueba/capturas" -w /prueba \
+            mcr.microsoft.com/playwright:v1.49.1-noble \
+            bash -c "npm init -y > /dev/null && npm install --no-audit --no-fund --silent playwright@1.49.1 && node ui-test.mjs http://localhost:8080"
+      - name: Guardar capturas de pantalla (iPhone y Android)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-celular
+          path: capturas/
+          if-no-files-found: ignore
       - name: Bitácora del servidor si algo falló
         if: failure()
         run: docker logs app | tail -120

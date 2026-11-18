@@ -25,6 +25,9 @@ namespace ElegidoManager.Controllers
         /// <summary>Los integrantes del grupo solo ven fechas, horarios y lugares (sin pagos ni datos del cliente).</summary>
         private bool SoloVer => User.IsInRole(Catalogos.RolIntegrante);
 
+        /// <summary>Solo el administrador ve el teléfono del cliente y la ficha completa desde la agenda.</summary>
+        private bool EsAdmin => User.IsInRole(Catalogos.RolAdministrador);
+
         /// <summary>Fuente de datos JSON del calendario (FullCalendar envía start y end).</summary>
         [HttpGet]
         public async Task<IActionResult> Eventos(DateTime start, DateTime end, bool canceladas = true)
@@ -129,14 +132,14 @@ namespace ElegidoManager.Controllers
                 eventos = eventos.Select(e => new
                 {
                     cliente = e.Contratacion.Cliente.NombreCompleto,
-                    telefono = SoloVer ? null : Formato.Telefono(e.Contratacion.Cliente.Telefono),
-                    whatsapp = SoloVer ? null : WhatsApp.Enlace(e.Contratacion.Cliente.Telefono),
+                    telefono = EsAdmin ? Formato.Telefono(e.Contratacion.Cliente.Telefono) : null,
+                    whatsapp = EsAdmin ? WhatsApp.Enlace(e.Contratacion.Cliente.Telefono) : null,
                     inicio = e.HorarioPendiente ? null : e.Inicio.ToString("h:mm tt", Mx),
                     fin = e.HorarioPendiente ? null : e.Fin.ToString("h:mm tt", Mx),
                     horario = e.HorarioTexto,
                     ubicacion = e.Ubicacion,
                     mapa = e.LugarPendiente ? null : Mapas.Url(e.Ubicacion),
-                    urlDetalle = SoloVer ? null : Url.Action("Detalle", "Contrataciones", new { id = e.ContratacionId }),
+                    urlDetalle = EsAdmin ? Url.Action("Detalle", "Contrataciones", new { id = e.ContratacionId }) : null,
                     urlEditar = SoloVer ? null : Url.Action("Editar", "Contrataciones", new { id = e.ContratacionId })
                 })
             });

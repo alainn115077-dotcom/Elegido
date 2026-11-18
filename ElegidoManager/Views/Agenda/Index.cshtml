@@ -36,9 +36,13 @@
 </div>
 
 @section Scripts {
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.15/locales/es.global.min.js"></script>
+    @* Calendario servido por la propia app; si no está (por ejemplo en la PC), se usa el CDN *@
+    <script src="~/lib/fullcalendar/index.global.min.js" asp-append-version="true"
+            asp-fallback-src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"
+            asp-fallback-test="window.FullCalendar"></script>
+    <script src="~/lib/fullcalendar/es.global.min.js" asp-append-version="true"
+            asp-fallback-src="https://cdn.jsdelivr.net/npm/@@fullcalendar/core@6.1.15/locales/es.global.min.js"
+            asp-fallback-test="window.FullCalendar && FullCalendar.globalLocales && FullCalendar.globalLocales.length"></script>
     <script>
         window.EM_RUTAS = {
             eventos: '@Url.Action("Eventos", "Agenda")',

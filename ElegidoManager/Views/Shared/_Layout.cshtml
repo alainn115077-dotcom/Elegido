@@ -25,9 +25,8 @@
     <meta name="theme-color" content="#0a0a0b" />
     <title>@ViewData["Title"] · ELEGIDO MANAGER</title>
     <link rel="icon" type="image/svg+xml" href="~/img/logo.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="preload" href="~/lib/manrope/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link href="~/lib/bootstrap/bootstrap.min.css" rel="stylesheet" asp-append-version="true" />
     <link rel="preload" href="~/lib/bootstrap-icons/fonts/bootstrap-icons.woff2?dd67030699838ea613ee6dbda90effa6" as="font" type="font/woff2" crossorigin />
     <link href="~/lib/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet" asp-append-version="true" />
@@ -157,6 +156,19 @@
 
     <partial name="_WhatsAppModal" />
 
+    @* Android/Chrome: precarga la página siguiente al empezar a tocar un enlace (las descargas y salidas no se precargan) *@
+    <script type="speculationrules">
+    {
+      "prefetch": [{
+        "where": { "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": ["/Cuenta/*", "/Respaldo/*", "/*/Exportar*", "/Agenda/Ics*", "/Documentos/Ver/*", "/Documentos/Descargar/*", "/api/*"] } },
+          { "not": { "selector_matches": "[target=_blank], [download], [data-no-precarga]" } }
+        ] },
+        "eagerness": "moderate"
+      }]
+    }
+    </script>
     <script src="~/lib/bootstrap/bootstrap.bundle.min.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

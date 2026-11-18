@@ -47,5 +47,6 @@ c=$(curl -s -o /dev/null -w '%{http_code}' "$B/api/whatsapp?hub.mode=subscribe&h
 
 # Archivos propios (Bootstrap, íconos, jQuery) deben servirse desde la app
 for p in /lib/bootstrap/bootstrap.min.css /lib/bootstrap/bootstrap.bundle.min.js /lib/bootstrap-icons/bootstrap-icons.min.css \
-         /lib/bootstrap-icons/fonts/bootstrap-icons.woff2 /lib/jquery/jquery.min.js /sw.js /manifest.webmanifest; do ok "$p"; done
+         /lib/bootstrap-icons/fonts/bootstrap-icons.woff2 /lib/jquery/jquery.min.js /lib/manrope/manrope-latin-wght-normal.woff2 /lib/fullcalendar/index.global.min.js \
+         /lib/fullcalendar/es.global.min.js /sw.js /manifest.webmanifest; do ok "$p"; done
 exit $F

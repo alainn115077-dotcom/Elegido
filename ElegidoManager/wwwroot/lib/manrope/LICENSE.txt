@@ -1,0 +1,3 @@
+Manrope — Copyright 2018 The Manrope Project Authors (https://github.com/sharanda/manrope)
+Licenciada bajo la SIL Open Font License, Version 1.1 (https://openfontlicense.org).
+Archivo variable (pesos 200–800), subconjunto latino, obtenido de Fontsource.

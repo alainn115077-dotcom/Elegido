@@ -1305,3 +1305,76 @@ a, button, .btn, .chip, .seg-btn, .nav-item-em, .fila-click { touch-action: mani
 .bot-entrada .btn { flex: 0 0 auto; }
 .nav-insignia { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #25d366; color: #04140a; font-size: .7rem; font-weight: 800; display: inline-grid; place-items: center; }
 @media (max-width: 575.98px) { .lista-solicitudes { grid-template-columns: 1fr; } .solicitud-acciones .btn { flex: 1; } .solicitud-acciones form { flex: 1; display: flex; } }
+
+/* =====================================================================
+   RENDIMIENTO MÁXIMO EN CELULAR (iOS y Android)
+   ===================================================================== */
+
+/* Fuente propia (sin conexiones a Google): un solo archivo variable de 25 KB con todos los pesos */
+@font-face {
+    font-family: "Manrope";
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url("../lib/manrope/manrope-latin-wght-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Tema oscuro nativo: sin destellos blancos entre páginas ni en controles del sistema */
+:root { color-scheme: dark; }
+html { background-color: var(--em-bg); }
+
+/* El fondo con brillo dorado va en una capa fija propia: ya no se vuelve a pintar al desplazar
+   (background-attachment: fixed obligaba al celular a repintar toda la pantalla en cada movimiento) */
+body { background: transparent; }
+body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+        radial-gradient(1100px 520px at 85% -10%, rgba(201, 165, 76, .07), transparent 60%),
+        radial-gradient(800px 500px at -10% 110%, rgba(201, 165, 76, .04), transparent 60%);
+    transform: translateZ(0);
+}
+
+/* Transición suave entre páginas (Safari 18.2+ y Chrome): la página anterior se queda
+   hasta que la nueva está lista, sin parpadeos; las barras fijas no se mueven */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .14s; }
+.topbar { view-transition-name: barra-superior; }
+.nav-inferior { view-transition-name: barra-inferior; }
+.sidebar { view-transition-name: menu-lateral; }
+::view-transition-group(barra-superior), ::view-transition-group(barra-inferior), ::view-transition-group(menu-lateral) { animation-duration: 0s; }
+@media (prefers-reduced-motion: reduce) {
+    @view-transition { navigation: none; }
+}
+
+/* Pantallas táctiles: sin efectos "hover" que se quedan pegados después de tocar */
+@media (hover: none) {
+    .btn-oro:hover, .btn-oro:focus, a.stat:hover, .chip-fecha:hover, .fc .fc-event:hover,
+    .tarjeta-integrante:hover, .trabajado:hover, .calc-rapido:hover { transform: none; filter: none; }
+}
+
+@media (max-width: 991.98px) {
+    /* El desenfoque (backdrop-filter) es lo más pesado para el iPhone al desplazar: se cambia por fondos sólidos */
+    .topbar, .nav-inferior, .sidebar, .modal-content, .toast-em,
+    body.menu-abierto .sidebar-velo { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+    .topbar { background: rgba(9, 9, 11, .97); }
+    .nav-inferior { background: rgba(12, 12, 14, .985); }
+    .sidebar { background: #111114; box-shadow: none; will-change: transform; }
+    body.menu-abierto .sidebar { box-shadow: 24px 0 48px -24px #000; }
+    body.menu-abierto .sidebar-velo { background: rgba(0, 0, 0, .55); }
+
+    /* Barras fijas en su propia capa: el celular no las vuelve a dibujar al desplazar */
+    .topbar, .nav-inferior { transform: translateZ(0); }
+
+    /* Sombras grandes y difuminadas cuestan mucho al desplazar; las tarjetas ya tienen borde */
+    .tarjeta, .proxima, .stat, .toast-em, .tarjeta-integrante, .trabajado { box-shadow: none; }
+
+    /* Listas largas: lo que está fuera de la pantalla no se dibuja hasta que te acercas */
+    .evento-fila, .tabla-em.tabla-apilable tbody tr, .solicitud, .lista-deudas li, .tarjeta-integrante, .trabajado {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 88px;
+    }
+
+    /* Desplazamiento nativo y sin "rebote" que arrastre la página de atrás cuando el menú está abierto */
+    .nav-lateral, .modal-body, .chat, .bot-chat { overscroll-behavior: contain; }
+}

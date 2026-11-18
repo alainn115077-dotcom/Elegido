@@ -193,13 +193,21 @@ using (var scope = app.Services.CreateScope())
 
 app.UseForwardedHeaders();
 
-// Tiempo de respuesta del servidor (visible en las herramientas del navegador → Server-Timing)
+// Tiempo de respuesta del servidor (Server-Timing) y "atrás" instantáneo en el celular
 app.Use(async (ctx, next) =>
 {
     var reloj = System.Diagnostics.Stopwatch.StartNew();
     ctx.Response.OnStarting(() =>
     {
-        ctx.Response.Headers["Server-Timing"] = $"app;dur={reloj.Elapsed.TotalMilliseconds:0}";
+        var r = ctx.Response;
+        r.Headers["Server-Timing"] = $"app;dur={reloj.Elapsed.TotalMilliseconds:0}";
+        // Los formularios ponen "no-store", y eso impide que el celular guarde la página para el botón "atrás" (bfcache).
+        // "private, no-cache" sí lo permite y aun así obliga a pedir la página nueva al navegar normalmente.
+        if (HttpMethods.IsGet(ctx.Request.Method) && r.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            r.Headers.CacheControl = "private, no-cache";
+            r.Headers.Remove("Pragma");
+        }
         return Task.CompletedTask;
     });
     await next();
@@ -216,11 +224,11 @@ app.Use(async (ctx, next) =>
     h["Content-Security-Policy"] =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-        "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+        "font-src 'self' data: https://cdn.jsdelivr.net; " +
         "img-src 'self' data: blob: https:; " +
         "frame-src 'self' https://maps.google.com https://www.google.com; " +
-        "connect-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+        "connect-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     await next();
 });
 

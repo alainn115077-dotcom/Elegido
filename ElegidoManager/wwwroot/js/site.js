@@ -97,16 +97,20 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     const valido = a => a && a.href && a.origin === location.origin && !a.target && !a.hasAttribute('download') &&
         !a.getAttribute('href').startsWith('#') && !/\/(Exportar|Descargar|Ics|IcsProximos|Ver)\b|\/Respaldo|\/Cuenta\/Salir/i.test(a.pathname);
 
-    const precargadas = new Set();
-    const precargar = a => {
-        if (!valido(a) || precargadas.has(a.href) || precargadas.size > 30) return;
-        precargadas.add(a.href);
-        const l = document.createElement('link');
-        l.rel = 'prefetch'; l.href = a.href;
-        document.head.appendChild(l);
-    };
-    document.addEventListener('touchstart', e => precargar(e.target.closest('a')), { passive: true });
-    document.addEventListener('mouseover', e => precargar(e.target.closest('a')), { passive: true });
+    // Precarga al tocar: en Chrome/Android lo hacen las "speculation rules" del layout; esto es el respaldo
+    const reglas = window.HTMLScriptElement && HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules');
+    if (!reglas) {
+        const precargadas = new Set();
+        const precargar = a => {
+            if (!valido(a) || a.hasAttribute('data-no-precarga') || precargadas.has(a.href) || precargadas.size > 30) return;
+            precargadas.add(a.href);
+            const l = document.createElement('link');
+            l.rel = 'prefetch'; l.href = a.href;
+            document.head.appendChild(l);
+        };
+        document.addEventListener('touchstart', e => precargar(e.target.closest('a')), { passive: true });
+        document.addEventListener('mouseover', e => precargar(e.target.closest('a')), { passive: true });
+    }
 
     const cargando = () => { barra.classList.remove('activa'); void barra.offsetWidth; barra.classList.add('activa'); };
     document.addEventListener('click', e => {
@@ -117,6 +121,20 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
         }
     });
     document.addEventListener('submit', e => { if (!e.defaultPrevented) cargando(); });
-    // Al volver con "atrás" no debe quedarse la barra
-    window.addEventListener('pageshow', () => barra.classList.remove('activa'));
+
+    // "Atrás" instantáneo: el celular guarda la página en memoria (bfcache). Si mientras tanto se guardó
+    // algo (cualquier formulario) o pasó mucho tiempo, se recarga para no mostrar datos viejos.
+    const MARCA = 'em-cambio';
+    const cargadaEn = Date.now();
+    document.addEventListener('submit', e => {
+        if ((e.target.method || '').toLowerCase() === 'post') { try { sessionStorage.setItem(MARCA, String(Date.now())); } catch { } }
+    }, true);
+    window.addEventListener('pageshow', e => {
+        barra.classList.remove('activa');
+        document.body.classList.remove('menu-abierto');
+        if (!e.persisted) return;
+        let ultimo = 0;
+        try { ultimo = Number(sessionStorage.getItem(MARCA)) || 0; } catch { }
+        if (ultimo > cargadaEn || Date.now() - cargadaEn > 10 * 60 * 1000) location.reload();
+    });
 })();
